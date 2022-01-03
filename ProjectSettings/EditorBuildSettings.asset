@@ -1,0 +1,44 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1045 &1
+EditorBuildSettings:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Scenes:
+  - enabled: 1
+    path: Assets/Scenes/OfflineScene.unity
+    guid: 45f04aa69710e4ad08c14c8c25f001a7
+  - enabled: 1
+    path: Assets/Scenes/RoomScene.unity
+    guid: 0b14b0764e04d4b619ee81ecda82a9f7
+  - enabled: 1
+    path: Assets/Scenes/PBRStageEquipmentDemo.unity
+    guid: f84571bf102f58b4189d844932b47c17
+  - enabled: 0
+    path: Assets/Scripts/Test/HomeScene.unity
+    guid: 9fc0d4010bbf28b4594072e72b8655ab
+  - enabled: 0
+    path: Assets/Agora-Plugin/API-Example/examples/basic/JoinChannelAudio/MainScene.unity
+    guid: 1af6c3e08db844534ad959cdf0127444
+  - enabled: 0
+    path: Assets/Mirror/Examples/AdditiveScenes/Scenes/SubScene.unity
+    guid: 7f4fd683fc6d866418c95f99977533a6
+  - enabled: 0
+    path: Assets/Mirror/Examples/Position/New Scene.unity
+    guid: 40aacd293e7004467a5ee26deaf20dd7
+  - enabled: 0
+    path: Assets/Mirror/Examples/Room/Scenes/OfflineScene.unity
+    guid: 9e6f14982412b2545a0911ebaaa46a23
+  - enabled: 0
+    path: Assets/Mirror/Examples/Room/Scenes/OnlineScene.unity
+    guid: d7a6763559b31854586c9e49916273ef
+  - enabled: 0
+    path: Assets/Mirror/Examples/Room/Scenes/RoomScene.unity
+    guid: 48478f4d522f96945b8396f376299d3a
+  - enabled: 0
+    path: Assets/Mirror/Examples/Basic/Scenes/Example.unity
+    guid: b30904751905d3f4dacde62ac85ec7c2
+  - enabled: 0
+    path: Assets/Mirror/Examples/Chat/Scenes/Main.unity
+    guid: f4e8d4de4484e44bba666f2d1f66c73e
+  m_configObjects: {}

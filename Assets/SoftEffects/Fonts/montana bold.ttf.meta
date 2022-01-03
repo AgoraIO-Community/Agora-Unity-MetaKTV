@@ -1,0 +1,23 @@
+fileFormatVersion: 2
+guid: 6edaddcdb0029b14ba6e825da5ee64f9
+timeCreated: 1513859129
+licenseType: Store
+TrueTypeFontImporter:
+  externalObjects: {}
+  serializedVersion: 4
+  fontSize: 36
+  forceTextureCase: -2
+  characterSpacing: 0
+  characterPadding: 1
+  includeFontData: 1
+  fontName: montana bold
+  fontNames:
+  - montana bold
+  fallbackFontReferences: []
+  customCharacters: TITLE
+  fontRenderingMode: 0
+  ascentCalculationMode: 1
+  useLegacyBoundsCalculation: 0
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

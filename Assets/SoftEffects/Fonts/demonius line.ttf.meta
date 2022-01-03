@@ -1,0 +1,23 @@
+fileFormatVersion: 2
+guid: 790c7afee6605304c90d8b6269fd1c82
+timeCreated: 1513858272
+licenseType: Store
+TrueTypeFontImporter:
+  externalObjects: {}
+  serializedVersion: 4
+  fontSize: 46
+  forceTextureCase: -2
+  characterSpacing: 0
+  characterPadding: 1
+  includeFontData: 1
+  fontName: Demonius line
+  fontNames:
+  - Demonius line
+  fallbackFontReferences: []
+  customCharacters: trtyu
+  fontRenderingMode: 0
+  ascentCalculationMode: 1
+  useLegacyBoundsCalculation: 0
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

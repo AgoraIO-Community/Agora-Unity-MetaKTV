@@ -1,0 +1,30 @@
+Some fonts have a CC license (free to use, but you must specify the author), 
+due to the Assetstore rules, I did not add them to the Fonts folder, 
+but you can download it yourself.
+
+Fonts provided by:
+https://fontstorage.com/category/
+
+______________________________________
+Font Names I Used:
+
+Title 1 - peace sans
+Title 2 - gilam
+Title 3 - molot + fira sans heavy
+Title 4 - chunkfive ex
+Title 5 - fira sans heavy
+Title 6 - fira sans heavy
+Title 7 - boomboom 
+Title 8 - peace sans
+Title 9 - fira sans heavy
+Title 10 - foo
+Title 11 - peace sans
+Title 12 - asket condensed + peace sans
+Title 13 - asket condensed
+Title 14 - peace sans + kaushan script
+Title 15 - fira sans heavy
+Title 16 - peace sans
+Title 17 - fira sans heavy
+Title 18 - foo + fira sans heavy
+Title 19 - fira sans heavy
+Title 20 - peace sans

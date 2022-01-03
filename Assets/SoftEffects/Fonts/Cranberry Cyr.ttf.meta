@@ -1,0 +1,22 @@
+fileFormatVersion: 2
+guid: 95e3dc3f3df2ca44690458df796c321b
+TrueTypeFontImporter:
+  externalObjects: {}
+  serializedVersion: 4
+  fontSize: 36
+  forceTextureCase: 0
+  characterSpacing: 0
+  characterPadding: 1
+  includeFontData: 1
+  fontName: Cranberry Cyr
+  fontNames:
+  - Cranberry Cyr
+  fallbackFontReferences: []
+  customCharacters: Strart Game
+  fontRenderingMode: 0
+  ascentCalculationMode: 1
+  useLegacyBoundsCalculation: 0
+  shouldRoundAdvanceValue: 1
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

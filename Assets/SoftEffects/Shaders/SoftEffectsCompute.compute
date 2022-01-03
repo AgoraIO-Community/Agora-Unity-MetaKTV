@@ -1,0 +1,3945 @@
+﻿#pragma kernel CSMask
+#pragma kernel CSFullCopy
+#pragma kernel CSCopy
+#pragma kernel CSFill
+#pragma kernel CSInverse
+#pragma kernel CSVerBlur
+#pragma kernel CSHorBlur
+#pragma kernel CSSubstrFloatBuffers
+#pragma kernel CSSepBevelCutIn
+#pragma kernel CSSepBevelCutInSmooth
+#pragma kernel CSSepBevelCutOut
+#pragma kernel CSVerBlur_R8
+#pragma kernel CSHorBlur_R8
+#pragma kernel CSVerBlur250_R8
+#pragma kernel CSHorBlur250_R8
+#pragma kernel CSFill_R8
+#pragma kernel CSDistBufferToOuterGlowPrec_R8
+#pragma kernel CSDistBufferToOuterGlowSoft_R8
+#pragma kernel CSDistBufferToInnerGlowPrec_R8
+#pragma kernel CSDistBufferToInnerGlowSoft_R8
+#pragma kernel CSInverse_R8FromAlpha
+#pragma kernel CSDistMAAFloat_R8
+#pragma kernel CSDistMEAAFloat
+#pragma kernel CSDistMEAAFloatSigned
+
+#pragma kernel CSDistM_R8
+#pragma kernel CSBoxBlurPass_R8
+#pragma kernel CSBoxBlurPass_AR8
+#pragma kernel CSDistBufferToStroke_R8
+#pragma kernel CSCopyAR8
+#pragma kernel CSAdd_R8
+#pragma kernel CSSepBevel_R8
+
+#pragma kernel CSVerBlur250_BUF
+#pragma kernel CSHorBlur250_BUF
+#pragma kernel CSVerBlur30_BUF
+#pragma kernel CSHorBlur30_BUF
+#pragma kernel CSVerBlur16_BUF
+#pragma kernel CSHorBlur16_BUF
+#pragma kernel CSVerBlur8_BUF
+#pragma kernel CSHorBlur8_BUF
+
+
+#pragma kernel CSBoxBlurPass
+#pragma kernel CSBoxBlurPass_BUF
+
+#pragma kernel CSCosineMap
+
+#pragma kernel CSCombiner
+#pragma kernel CSShadowCombiner
+#pragma kernel CSDistM
+#pragma kernel CSDistMInverse
+#pragma kernel CSDistME
+#pragma kernel CSDistMESigned
+#pragma kernel CSDistMM
+#pragma kernel CSDistMC
+#pragma kernel CSDistMAAFloat
+#pragma kernel CSDistMAAFloatInverse
+#pragma kernel CSDistBufferToStroke
+#pragma kernel NormalizeF
+#pragma kernel NormalizeFCN
+#pragma kernel NormalizeF1
+#pragma kernel NormalizeF2
+#pragma kernel NormalizeFB
+
+int hk;
+int width;
+int height;
+int ext;
+int hcolor;
+float fSize;
+float range;
+float spread;
+float minV;
+float maxV;
+float ogOptions;
+float fpOptionsOp;
+
+// float4 values
+float4 light;
+float4 eColor;
+float4 sColor;
+float4 blColor;
+float4 bsColor;
+float4 ogColor;
+float4 strColor;
+float4 strOptions;
+float4 bevLColor;
+float4 bevSColor;
+float4 igColor;
+float4 igOptions;
+float4 isColor;
+float4 isOptions;
+float4 csColor;
+float4 csOptions;
+float4 csColor_1;
+float4 csOptions_1;
+float4 fcColor;
+float4 fgOptions;
+float4 fpOptions;
+
+bool boolA;
+bool boolB;
+bool boolC;
+bool inverse;
+bool csUse;
+bool csUse_1;
+
+bool ogUse;
+bool ogUseG;
+
+bool igUse;
+bool igUseG;
+bool igUseL;
+bool igUseS;
+
+bool isUse;
+bool isUseM;
+bool isUseD;
+
+bool sUse;
+bool sUseIn;
+bool sUseG;
+bool sUseTBu;
+bool sUseTLi;
+bool sUseTRa;
+bool sUseTAn;
+bool sUseTRe;
+
+bool bUse;
+bool bUseIn;
+bool bUseSD;
+bool bUseLL;
+bool bUseLS;
+
+bool fcUse;
+bool fcUseN;
+bool fcUseL;
+bool fcUseS;
+bool fcUseO;
+bool fcUseD;
+
+bool fgUse;
+bool fgUseN;
+bool fgUseL;
+bool fgUseS;
+bool fgUseO;
+bool fgUseD;
+bool fgUseTBu;
+bool fgUseTLi;
+bool fgUseTRa;
+bool fgUseTAn;
+bool fgUseTRe;
+
+
+
+bool fpUse;
+bool fpUseN;
+bool fpUseL;
+bool fpUseS;
+bool fpUseO;
+bool fpUseD;
+
+// int buffer
+RWStructuredBuffer<int> gRWBufferA;
+RWStructuredBuffer<int> gRWBufferB;
+RWStructuredBuffer<int> gRWBufferC;
+StructuredBuffer<int> gInputBuffer;
+
+// float buffer 32-bit floating point
+StructuredBuffer <float> gInputBufferfloat;
+StructuredBuffer <float> fBInputA;
+StructuredBuffer <float> fBInputB;
+StructuredBuffer <float> fBInputC;
+StructuredBuffer <float> fBInputD;
+StructuredBuffer <float> fBInputE;
+StructuredBuffer <float> fBInputE1;
+
+RWStructuredBuffer <float> fBOutA;
+RWStructuredBuffer<float> gRWBufferAfloat;
+RWStructuredBuffer<float> gRWBufferBfloat;
+RWStructuredBuffer<float> gRWBufferCfloat;
+RWStructuredBuffer<float> wBuffer;
+
+// float2 buffer
+StructuredBuffer<float2> gInputVBuffer; // uv vertex
+StructuredBuffer<float2> gInputVBufferA; // uv vertex
+
+StructuredBuffer<int2> gInputVBufferAInt; // uv vertex
+StructuredBuffer<int2> gInputVBufferBInt; // uv vertex
+
+// float4 buffer
+StructuredBuffer<float4> gInputBufferF4A; // gradients; positions: 0 - stroke, 1 - inner glow, 2 - grad overlay, 3 - outer glow 
+
+
+// textures
+RWTexture2D<float4> gOutputV;
+RWTexture2D<float4> gOutputD;
+RWTexture2D<float> gOutputVf;
+RWTexture2D<float> gOutputDf;
+
+Texture2D gInputG;
+
+Texture2D gInputK;
+
+Texture2D gInputV;
+
+Texture2D gInputH;
+
+Texture2D gInputA;
+Texture2D gInputB; 
+Texture2D gInputC;
+Texture2D gInputD;
+
+Texture2D gInputE;
+Texture2D gInputF;
+
+Texture2D gInputP;
+Texture2D gInputS;
+
+Texture2D gInputT;
+
+Texture2D gInputX;
+Texture2D gInputX1;
+
+
+#define N32 32
+#define N256 256
+#define bRad8 8
+#define bRad16 16
+#define bRad30 30
+#define bRad250 250
+#define CacheSize8 (N32 + 2 * bRad8)
+#define CacheSize16 (N32 + 2 * bRad16)
+#define CacheSize30 (N32 + 2 * bRad30)
+#define CacheSize250 (N256 + 2 * bRad250)
+groupshared float4 gCache8R8[CacheSize8];
+groupshared float4 gCache16R8[CacheSize16];
+groupshared float4 gCache[CacheSize30]; // MAX SIZE - 16kb per group
+groupshared float gCache30R8[CacheSize30];
+groupshared float gCache250[CacheSize250];
+
+static const float PI =   3.14159265f;
+static const float PID2 = 1.57079633f;
+static const float PI2 = 6.2831853f;
+static const int one = 1;
+// ----------------  GAUSSIAN BLUR -----------------------------------------------------------------
+
+////////////////////////////////////////////// Vertical Gaussian blur RGBA to RGBA 
+[numthreads(1,N32,1)]
+void CSVerBlur (int3 groupThreadID : SV_GroupThreadID, int3 dispatchThreadID : SV_DispatchThreadID)
+{
+	/*
+	Input:
+		gInputV -  inputText RGBA;
+		wBuffer - weightsBuffer;
+	Output:
+		gOutputV - bluredTexture RGBA;
+	*/
+	if(groupThreadID.y < bRad30)
+	{
+		int y = max(dispatchThreadID.y - bRad30, 0);
+		gCache[groupThreadID.y] = gInputV[int2(dispatchThreadID.x, y)];
+	}
+	if(groupThreadID.y >= N32-bRad30)
+	{
+		int y = min(dispatchThreadID.y + bRad30, gInputV.Length.y-1);
+		gCache[groupThreadID.y+2*bRad30] = gInputV[int2(dispatchThreadID.x, y)];
+	}
+	
+	gCache[groupThreadID.y+bRad30] = gInputV[min(dispatchThreadID.xy, gInputV.Length.xy-1)];
+	GroupMemoryBarrierWithGroupSync();
+	float4 blurColor = float4(0, 0, 0, 0);
+	int k;
+	for(int i = -bRad30; i <= bRad30; ++i)
+	{
+		k = groupThreadID.y + bRad30 + i;
+		blurColor += wBuffer[i + bRad30] * gCache[k];
+	}
+	gOutputV[dispatchThreadID.xy] = blurColor;
+}
+
+////////////////////////////////////////////// Horizontal Gaussian blur RGBA to RGBA 
+[numthreads(N32, 1, 1)]
+void CSHorBlur (int3 groupThreadID : SV_GroupThreadID, int3 dispatchThreadID : SV_DispatchThreadID)
+{
+	/*
+	Input:
+		gInputH -  inputText RGBA;
+		wBuffer - weightsBuffer;
+	Output:
+		gOutputD - bluredTexture RGBA;
+	*/
+	if(groupThreadID.x < bRad30)
+	{
+		int x = max(dispatchThreadID.x - bRad30, 0);
+		gCache[groupThreadID.x] = gInputH[int2(x, dispatchThreadID.y)];
+	}
+	if(groupThreadID.x >= N32-bRad30)
+	{
+		int x = min(dispatchThreadID.x + bRad30, gInputH.Length.x-1);
+		gCache[groupThreadID.x+2 * bRad30] = gInputH[int2(x, dispatchThreadID.y)];
+	}
+	gCache[groupThreadID.x + bRad30] = gInputH[min(dispatchThreadID.xy, gInputH.Length.xy-1)];
+	GroupMemoryBarrierWithGroupSync();
+	float4 blurColor = float4(0.0f, 0.0f, 0.0f, 0.0f);
+	for(int i = -bRad30; i <= bRad30; ++i)
+	{
+		int k = groupThreadID.x + bRad30 + i;
+		blurColor += wBuffer[i + bRad30] * gCache[k];
+	}
+	gOutputD[dispatchThreadID.xy] =  blurColor;
+}
+
+////////////////////////////////////////////// Horizontal Gaussian blur RGBA a-channel to R8 
+[numthreads(1, N32, 1)]
+void CSVerBlur_R8(int3 groupThreadID : SV_GroupThreadID, int3 dispatchThreadID : SV_DispatchThreadID)
+{
+	/*
+	Input:
+		gInputV -  inputText RGBA;
+		wBuffer - weightsBuffer;
+	Output:
+		gOutputVf - bluredTexture R8;
+	*/
+	if (groupThreadID.y < bRad30)
+	{
+		int y = max(dispatchThreadID.y - bRad30, 0);
+
+		gCache30R8[groupThreadID.y] = gInputV[int2(dispatchThreadID.x, y)].a;
+	}
+	if (groupThreadID.y >= N32 - bRad30)
+	{
+		int y = min(dispatchThreadID.y + bRad30, gInputV.Length.y - 1);
+
+		gCache30R8[groupThreadID.y + 2 * bRad30] = gInputV[int2(dispatchThreadID.x, y)].a;
+	}
+
+	gCache30R8[groupThreadID.y + bRad30] = gInputV[min(dispatchThreadID.xy, gInputV.Length.xy - 1)].a;
+	GroupMemoryBarrierWithGroupSync();
+	float blurColor = 0.0f;
+	for (int i = -bRad30; i <= bRad30; ++i)
+	{
+		int k = groupThreadID.y + bRad30 + i;
+		blurColor += wBuffer[i + bRad30] * gCache30R8[k];
+	}
+	gOutputVf[dispatchThreadID.xy] = blurColor;
+}
+
+////////////////////////////////////////////// Vertical Gaussian blur R8 r-channel to R8 
+[numthreads(N32, 1, 1)]
+void CSHorBlur_R8(int3 groupThreadID : SV_GroupThreadID, int3 dispatchThreadID : SV_DispatchThreadID)
+{
+	/*
+	Input:
+		gInputH -  inputText R8;
+		wBuffer - weightsBuffer;
+	Output:
+		gOutputDf - bluredTexture R8;
+	*/
+	if (groupThreadID.x < bRad30)
+	{
+		int x = max(dispatchThreadID.x - bRad30, 0);
+		gCache30R8[groupThreadID.x] = gInputH[int2(x, dispatchThreadID.y)].r;
+	}
+	if (groupThreadID.x >= N32 - bRad30)
+	{
+		int x = min(dispatchThreadID.x + bRad30, gInputH.Length.x - 1);
+		gCache30R8[groupThreadID.x + 2 * bRad30] = gInputH[int2(x, dispatchThreadID.y)].r;
+	}
+	gCache30R8[groupThreadID.x + bRad30] = gInputH[min(dispatchThreadID.xy, gInputH.Length.xy - 1)].r;
+	GroupMemoryBarrierWithGroupSync();
+	float blurColor = 0.0f;
+	for (int i = -bRad30; i <= bRad30; ++i)
+	{
+		int k = groupThreadID.x + bRad30 + i;
+		blurColor += wBuffer[i + bRad30] * gCache30R8[k];
+	}
+	gOutputDf[dispatchThreadID.xy] = blurColor;
+}
+
+////////////////////////////////////////////// Vertical  Gaussian blur RGBA a-channel to R8 with max kernel radius 250 px
+[numthreads(1, N256, 1)]
+void CSVerBlur250_R8(int3 groupThreadID : SV_GroupThreadID, int3 dispatchThreadID : SV_DispatchThreadID)
+{
+	/*
+	Input:
+		gInputV -  inputText RGBA;
+		wBuffer - weightsBuffer;
+	Output:
+		gOutputVf - bluredTexture R8;
+	*/
+	if (groupThreadID.y < bRad250) 
+	{
+		// fill left cache zone  
+		int y = max(dispatchThreadID.y - bRad250, 0);
+
+		gCache250[groupThreadID.y] = gInputV[int2(dispatchThreadID.x, y)].a;
+
+		// fill right cache zone 
+		y = min(dispatchThreadID.y + N256, gInputV.Length.y - 1);
+
+		gCache250[groupThreadID.y + N256 + bRad250] = gInputV[int2(dispatchThreadID.x, y)].a;
+	}
+
+	gCache250[groupThreadID.y + bRad250] = gInputV[min(dispatchThreadID.xy, gInputV.Length.xy - 1)].a;
+	GroupMemoryBarrierWithGroupSync();
+	float blurColor = 0.0f;
+	for (int i = -bRad250; i <= bRad250; ++i)
+	{
+		int k = groupThreadID.y + bRad250 + i;
+		blurColor += wBuffer[i + bRad250] * gCache250[k];
+	}
+	gOutputVf[dispatchThreadID.xy] = blurColor;
+}
+
+////////////////////////////////////////////// Horizontal Gaussian blur R8 r-channel to R8 with max kernel radius 250px
+[numthreads(N256, 1, 1)]
+void CSHorBlur250_R8(int3 groupThreadID : SV_GroupThreadID, int3 dispatchThreadID : SV_DispatchThreadID)
+{
+	/*
+	Input:
+		gInputH -  inputText R8;
+		wBuffer - weightsBuffer;
+		int width
+		int height
+	Output:
+		gOutputDf - bluredTexture R8;
+	*/
+	if (groupThreadID.x < bRad250)
+	{
+		int x = max(dispatchThreadID.x - bRad250, 0);
+		gCache250[groupThreadID.x] = gInputH[int2(x, dispatchThreadID.y)].r;
+
+		x = min(dispatchThreadID.x + N256, gInputH.Length.x - 1);
+		gCache250[groupThreadID.x + N256 + bRad250] = gInputH[int2(x, dispatchThreadID.y)].r;
+	}
+
+	gCache250[groupThreadID.x + bRad250] = gInputH[min(dispatchThreadID.xy, gInputH.Length.xy - 1)].r;
+	GroupMemoryBarrierWithGroupSync();
+	float blurColor = 0.0f;
+	for (int i = -bRad250; i <= bRad250; ++i)
+	{
+		int k = groupThreadID.x + bRad250 + i;
+		blurColor += wBuffer[i + bRad250] * gCache250[k];
+	}
+	gOutputDf[dispatchThreadID.xy] = blurColor;
+}
+
+////////////////////////////////////////////// Vertical Gaussian blur float buffer to float buffer with max kernel radius 250 px
+[numthreads(1, N256, 1)]
+void CSVerBlur250_BUF(int3 groupThreadID : SV_GroupThreadID, int3 dispatchThreadID : SV_DispatchThreadID)
+{
+	/*
+	Input:
+		wBuffer - weightsBuffer;
+		StructuredBuffer<float> fBInputA;
+		int width 
+		int height
+	Output:
+		RWStructuredBuffer <float> fBOutA;
+	*/
+	int w = width;
+	int h = height;
+	int pos;
+	if (groupThreadID.y < bRad250)
+	{
+		// fill left cache zone  
+		int y = max(dispatchThreadID.y - bRad250, 0);
+		int x = dispatchThreadID.x;
+		pos = y*w + x;
+		gCache250[groupThreadID.y] = fBInputA[pos];
+
+		// fill right cache zone 
+		y = min(dispatchThreadID.y + N256, h - 1);
+		pos = y*w + x;
+		gCache250[groupThreadID.y + N256 + bRad250] = fBInputA[pos];
+	}
+	int2 xy = min(dispatchThreadID.xy, int2(w, h) - 1);
+	pos = xy.y*w + xy.x;
+	gCache250[groupThreadID.y + bRad250] = fBInputA[pos];
+	GroupMemoryBarrierWithGroupSync();
+	float blurColor = 0.0f;
+	for (int i = -bRad250; i <= bRad250; ++i)
+	{
+		int k = groupThreadID.y + bRad250 + i;
+		blurColor += wBuffer[i + bRad250] * gCache250[k];
+	}
+	xy = dispatchThreadID.xy;
+	pos = min(xy.y, h - 1)*w + min(xy.x, w - 1);
+	fBOutA[pos] = blurColor;
+}
+
+////////////////////////////////////////////// Horizontal Gaussian blur float buffer to float buffer with max kernel radius 250 px
+[numthreads(N256, 1, 1)]
+void CSHorBlur250_BUF(int3 groupThreadID : SV_GroupThreadID, int3 dispatchThreadID : SV_DispatchThreadID)
+{
+	/*
+	Input:
+		wBuffer - weightsBuffer;
+		StructuredBuffer<float> fBInputA;
+		int width
+		int height
+	Output:
+		RWStructuredBuffer <float> fBOutA;
+	*/
+	int w = width;
+	int h = height;
+	int pos;
+	if (groupThreadID.x < bRad250)
+	{
+		int x = max(dispatchThreadID.x - bRad250, 0);
+		int y = dispatchThreadID.y;
+		pos = y*w + x;
+		gCache250[groupThreadID.x] = fBInputA[pos];
+
+		x = min(dispatchThreadID.x + N256, w - 1);
+		pos = y*w + x;
+		gCache250[groupThreadID.x + N256 + bRad250] = fBInputA[pos];
+	}
+
+	int2 xy = min(dispatchThreadID.xy, int2(w, h) - 1);
+	pos = xy.y*w + xy.x;
+	
+	gCache250[groupThreadID.x + bRad250] = fBInputA[pos];
+	GroupMemoryBarrierWithGroupSync();
+
+	float blurColor = 0.0f;
+	for (int i = -bRad250; i <= bRad250; ++i)
+	{
+		int k = groupThreadID.x + bRad250 + i;
+		blurColor += wBuffer[i + bRad250] * gCache250[k];
+	}
+	xy = dispatchThreadID.xy;
+	pos = min(xy.y, h - 1)*w + min(xy.x, w - 1);
+	fBOutA[pos] = blurColor;
+}
+
+////////////////////////////////////////////// Vertical Gaussian blur float buffer to float buffer with max kernel radius 30 px
+[numthreads(1, N32, 1)]
+void CSVerBlur30_BUF(int3 groupThreadID : SV_GroupThreadID, int3 dispatchThreadID : SV_DispatchThreadID)
+{
+	/*
+	Input:
+	wBuffer - weightsBuffer;
+	RWStructuredBuffer<float> gRWBufferBfloat;
+	int width
+	int height
+	Output:
+	RWStructuredBuffer <float> fBOutA;
+	*/
+	int w = width;
+	int h = height;
+	int pos;
+
+	if (groupThreadID.y < bRad30)
+	{
+		// fill left cache zone  
+		int y = max(dispatchThreadID.y - bRad30, 0);
+		int x = dispatchThreadID.x;
+		pos = y*w + x;
+		gCache30R8[groupThreadID.y] = gRWBufferBfloat[pos];
+
+		// fill right cache zone 
+		y = min(dispatchThreadID.y + N32, h - 1);
+		pos = y*w + x;
+		gCache30R8[groupThreadID.y + N32 + bRad30] = gRWBufferBfloat[pos];
+	}
+	int2 xy = min(dispatchThreadID.xy, int2(w, h) - 1);
+	pos = xy.y*w + xy.x;
+	gCache30R8[groupThreadID.y + bRad30] = gRWBufferBfloat[pos];
+	GroupMemoryBarrierWithGroupSync();
+	float blurColor = 0.0f;
+	int k;
+	int s = groupThreadID.y + bRad30;
+	for (int i = -bRad30; i <= bRad30; ++i)
+	{
+		k = s + i;
+		blurColor += wBuffer[i + bRad30] * gCache30R8[k];
+	}
+	xy = dispatchThreadID.xy;
+	pos = min(xy.y, h - 1)*w + min(xy.x, w - 1);
+	fBOutA[pos] = blurColor;
+}
+
+////////////////////////////////////////////// Horizontal Gaussian blur float buffer to float buffer with max kernel radius 30 px
+[numthreads(N32, 1, 1)]
+void CSHorBlur30_BUF(int3 groupThreadID : SV_GroupThreadID, int3 dispatchThreadID : SV_DispatchThreadID)
+{
+	/*
+	Input:
+		wBuffer - weightsBuffer;
+		RWStructuredBuffer<float> gRWBufferBfloat;
+		int width
+		int height
+	Output:
+		RWStructuredBuffer <float> fBOutA;
+	*/
+	int w = width;
+	int h = height;
+	int pos;
+	if (groupThreadID.x < bRad30)
+	{
+		int x = max(dispatchThreadID.x - bRad30, 0);
+		int y = dispatchThreadID.y;
+		pos = y*w + x;
+		gCache30R8[groupThreadID.x] = gRWBufferBfloat[pos];
+
+		x = min(dispatchThreadID.x + N32, w - 1);
+		pos = y*w + x;
+		gCache30R8[groupThreadID.x + N32 + bRad30] = gRWBufferBfloat[pos];
+	}
+
+	int2 xy = min(dispatchThreadID.xy, int2(w, h) - 1);
+	pos = xy.y*w + xy.x;
+
+	gCache30R8[groupThreadID.x + bRad30] = gRWBufferBfloat[pos];
+	GroupMemoryBarrierWithGroupSync();
+
+	float blurColor = 0.0f;
+	int k;
+	int s = groupThreadID.x + bRad30;
+	int i = 0;
+	for (i = -bRad30; i <= bRad30; ++i)
+	{
+		k = s + i;
+		blurColor += wBuffer[i + bRad30] * gCache30R8[k];
+	}
+	xy = dispatchThreadID.xy;
+	pos = min(xy.y, h - 1)*w + min(xy.x, w - 1);
+	fBOutA[pos] = blurColor;
+}
+
+////////////////////////////////////////////// Vertical Gaussian blur float buffer to float buffer with max kernel radius 16 px
+[numthreads(1, N32, 1)]
+void CSVerBlur16_BUF(int3 groupThreadID : SV_GroupThreadID, int3 dispatchThreadID : SV_DispatchThreadID)
+{
+	/*
+	Input:
+	wBuffer - weightsBuffer;
+	RWStructuredBuffer<float> gRWBufferBfloat;
+	int width
+	int height
+	Output:
+	RWStructuredBuffer <float> fBOutA;
+	*/
+	int w = width;
+	int h = height;
+	int pos;
+
+	if (groupThreadID.y < bRad16)
+	{
+		// fill left cache zone  
+		int y = max(dispatchThreadID.y - bRad16, 0);
+		int x = dispatchThreadID.x;
+		pos = y * w + x;
+		gCache16R8[groupThreadID.y] = gRWBufferBfloat[pos];
+
+		// fill right cache zone 
+		y = min(dispatchThreadID.y + N32, h - 1);
+		pos = y * w + x;
+		gCache16R8[groupThreadID.y + N32 + bRad16] = gRWBufferBfloat[pos];
+	}
+	int2 xy = min(dispatchThreadID.xy, int2(w, h) - 1);
+	pos = xy.y*w + xy.x;
+	gCache16R8[groupThreadID.y + bRad16] = gRWBufferBfloat[pos];
+	GroupMemoryBarrierWithGroupSync();
+	float blurColor = 0.0f;
+	int k;
+	int s = groupThreadID.y + bRad16;
+	for (int i = -bRad16; i <= bRad16; ++i)
+	{
+		k = s + i;
+		blurColor += wBuffer[i + bRad16] * gCache16R8[k];
+	}
+	xy = dispatchThreadID.xy;
+	pos = min(xy.y, h - 1)*w + min(xy.x, w - 1);
+	fBOutA[pos] = blurColor;
+}
+
+////////////////////////////////////////////// Horizontal Gaussian blur float buffer to float buffer with max kernel radius 16 px
+[numthreads(N32, 1, 1)]
+void CSHorBlur16_BUF(int3 groupThreadID : SV_GroupThreadID, int3 dispatchThreadID : SV_DispatchThreadID)
+{
+	/*
+	Input:
+	wBuffer - weightsBuffer;
+	RWStructuredBuffer<float> gRWBufferBfloat;
+	int width
+	int height
+	Output:
+	RWStructuredBuffer <float> fBOutA;
+	*/
+	int w = width;
+	int h = height;
+	int pos;
+	if (groupThreadID.x < bRad16)
+	{
+		int x = max(dispatchThreadID.x - bRad16, 0);
+		int y = dispatchThreadID.y;
+		pos = y * w + x;
+		gCache16R8[groupThreadID.x] = gRWBufferBfloat[pos];
+
+		x = min(dispatchThreadID.x + N32, w - 1);
+		pos = y * w + x;
+		gCache16R8[groupThreadID.x + N32 + bRad16] = gRWBufferBfloat[pos];
+	}
+
+	int2 xy = min(dispatchThreadID.xy, int2(w, h) - 1);
+	pos = xy.y*w + xy.x;
+
+	gCache16R8[groupThreadID.x + bRad16] = gRWBufferBfloat[pos];
+	GroupMemoryBarrierWithGroupSync();
+
+	float blurColor = 0.0f;
+	int k;
+	int s = groupThreadID.x + bRad16;
+	int i = 0;
+	for (i = -bRad16; i <= bRad16; ++i)
+	{
+		k = s + i;
+		blurColor += wBuffer[i + bRad16] * gCache16R8[k];
+	}
+	xy = dispatchThreadID.xy;
+	pos = min(xy.y, h - 1)*w + min(xy.x, w - 1);
+	fBOutA[pos] = blurColor;
+}
+
+////////////////////////////////////////////// Vertical Gaussian blur float buffer to float buffer with max kernel radius 8 px
+[numthreads(1, N32, 1)]
+void CSVerBlur8_BUF(int3 groupThreadID : SV_GroupThreadID, int3 dispatchThreadID : SV_DispatchThreadID)
+{
+	/*
+	Input:
+	wBuffer - weightsBuffer;
+	RWStructuredBuffer<float> gRWBufferBfloat;
+	int width
+	int height
+	Output:
+	RWStructuredBuffer <float> fBOutA;
+	*/
+	int w = width;
+	int h = height;
+	int pos;
+
+	if (groupThreadID.y < bRad8)
+	{
+		// fill left cache zone  
+		int y = max(dispatchThreadID.y - bRad8, 0);
+		int x = dispatchThreadID.x;
+		pos = y * w + x;
+		gCache8R8[groupThreadID.y] = gRWBufferBfloat[pos];
+
+		// fill right cache zone 
+		y = min(dispatchThreadID.y + N32, h - 1);
+		pos = y * w + x;
+		gCache8R8[groupThreadID.y + N32 + bRad8] = gRWBufferBfloat[pos];
+	}
+	int2 xy = min(dispatchThreadID.xy, int2(w, h) - 1);
+	pos = xy.y*w + xy.x;
+	gCache8R8[groupThreadID.y + bRad8] = gRWBufferBfloat[pos];
+	GroupMemoryBarrierWithGroupSync();
+	float blurColor = 0.0f;
+	int k;
+	int s = groupThreadID.y + bRad8;
+	for (int i = -bRad8; i <= bRad8; ++i)
+	{
+		k = s + i;
+		blurColor += wBuffer[i + bRad8] * gCache8R8[k];
+	}
+	xy = dispatchThreadID.xy;
+	pos = min(xy.y, h - 1)*w + min(xy.x, w - 1);
+	fBOutA[pos] = blurColor;
+}
+
+////////////////////////////////////////////// Horizontal Gaussian blur float buffer to float buffer with max kernel radius 8 px
+[numthreads(N32, 1, 1)]
+void CSHorBlur8_BUF(int3 groupThreadID : SV_GroupThreadID, int3 dispatchThreadID : SV_DispatchThreadID)
+{
+	/*
+	Input:
+	wBuffer - weightsBuffer;
+	RWStructuredBuffer<float> gRWBufferBfloat;
+	int width
+	int height
+	Output:
+	RWStructuredBuffer <float> fBOutA;
+	*/
+	int w = width;
+	int h = height;
+	int pos;
+	if (groupThreadID.x < bRad8)
+	{
+		int x = max(dispatchThreadID.x - bRad8, 0);
+		int y = dispatchThreadID.y;
+		pos = y * w + x;
+		gCache8R8[groupThreadID.x] = gRWBufferBfloat[pos];
+
+		x = min(dispatchThreadID.x + N32, w - 1);
+		pos = y * w + x;
+		gCache8R8[groupThreadID.x + N32 + bRad8] = gRWBufferBfloat[pos];
+	}
+
+	int2 xy = min(dispatchThreadID.xy, int2(w, h) - 1);
+	pos = xy.y*w + xy.x;
+
+	gCache8R8[groupThreadID.x + bRad8] = gRWBufferBfloat[pos];
+	GroupMemoryBarrierWithGroupSync();
+
+	float blurColor = 0.0f;
+	int k;
+	int s = groupThreadID.x + bRad8;
+	int i = 0;
+	for (i = -bRad16; i <= bRad8; ++i)
+	{
+		k = s + i;
+		blurColor += wBuffer[i + bRad8] * gCache8R8[k];
+	}
+	xy = dispatchThreadID.xy;
+	pos = min(xy.y, h - 1)*w + min(xy.x, w - 1);
+	fBOutA[pos] = blurColor;
+}
+
+
+
+// ---------------- END GAUSSIAN BLUR -----------------------------------------------------------------
+//
+//
+//
+//
+//
+
+/////////////////////////// normal blend
+float4 normalpha(float4 bot, float4 top)
+{
+	float4 res = bot.a + top.a - bot.a * top.a;
+	float tr = top.a / res.a;
+	res.rgb = (1.0f - tr) * bot.rgb + tr * top.rgb;
+	return res;
+}
+
+/////////////////////////// lighten
+float4 lighten(float4 bot, float4 top)
+{
+	float4 res = bot.a + top.a - bot.a * top.a;
+	float tr = top.a / res.a;
+	float3 b = float3(max(bot.r, top.r), max(bot.g, top.g), max(bot.b, top.b));
+	res.rgb = (1.0f - tr)*bot.rgb + tr*((1.0f - bot.a)*top.rgb + bot.a * b);
+
+	return res;
+}
+
+/////////////////////////// darken
+float4 darken(float4 bot, float4 top)
+{
+	float4 res = bot.a + top.a - bot.a * top.a;
+	float tr = top.a / res.a;
+	float3 b = float3(min(bot.r, top.r), min(bot.g, top.g), min(bot.b, top.b));
+	res.rgb = (1.0f - tr)*bot.rgb + tr*((1.0f - bot.a)*top.rgb + bot.a * b);
+	return res;
+}
+
+/////////////////////////// screen
+float screen_b(float bot, float top)
+{
+	return bot + top - (bot * top);
+}
+
+float4 screen(float4 bot, float4 top)
+{
+	float4 res = bot.a + top.a - bot.a * top.a;
+	float tr = top.a / res.a;
+	float3 b = bot.rgb + top.rgb - (bot.rgb * top.rgb);
+	res.rgb = (1.0f - tr)*bot.rgb + tr*((1.0f - bot.a)*top.rgb + bot.a * b);
+	return res;
+}
+
+/////////////////////////// multiplay
+float4 multiplay(float4 bot, float4 top)
+{
+	float4 res = bot.a + top.a - bot.a * top.a;
+	float tr = top.a / res.a;
+	float3 b = float3(top.r * bot.r, top.g * bot.g, top.b * bot.b);
+	res.rgb = (1.0f - tr)*bot.rgb + tr*((1.0f - bot.a)*top.rgb + bot.a * b);
+	return res;
+}
+
+/////////////////////////// normal cut blend // if (top.a == 0) return bot;
+float4 normalpha_cut(float4 bot, float4 top) 
+{
+	if (top.a == 0) return bot;
+	float4 res = bot.a + top.a - bot.a * top.a;
+	float tr = top.a / res.a;
+	res.rgb = (1.0f - tr) * bot.rgb + tr * top.rgb;
+	return res;
+}
+
+/////////////////////////// normal blend
+float4 normalpha_s(float4 bot, float4 top) // assume bot.a = 1;
+{
+	float4 res = bot.a;
+	res.rgb = top.rgb;
+	res.rgb = res.rgb * top.a + bot.rgb*(1.0f - top.a);
+	return res;
+}
+
+/////////////////////////// lighten
+float4 lighten_s(float4 bot, float4 top)
+{
+	//float4 res = bot.a + top.a - bot.a * top.a;
+	float4 res = bot.a;
+	res.rgb = max(top.rgb, bot.rgb);
+	res.rgb = res.rgb *top.a + bot.rgb*(1.0f - top.a);
+	return res;
+}
+
+float4 screen_s(float4 bot, float4 top)
+{
+	float4 res = bot.a;
+	res.rgb = 1.0f - (1.0f -bot.rgb)*(1.0f - top.rgb);
+	res.rgb = res.rgb *top.a + bot.rgb*(1.0f - top.a);
+	return res;
+}
+
+float4 multiplay_s(float4 bot, float4 top)
+{
+	float4 res = bot.a;
+	res.rgb = top.rgb*bot.rgb;
+	res.rgb = res.rgb *top.a + bot.rgb*(1.0f - top.a);
+	return res;
+}
+
+float4 darken_s(float4 bot, float4 top)
+{
+	//float4 res = (bot.a > 0) ? bot.a : bot.a + top.a - bot.a * top.a;
+	float4 res = bot.a;
+	res.rgb = float3 (min(top.r,bot.r), min(top.g, bot.g), min(top.b, bot.b));
+	res.rgb = res.rgb *top.a + bot.rgb*(1.0f - top.a);
+	return res;
+}
+
+///////////////////////////  overlay
+float overlay_b(float bot, float top)
+{
+	return (bot <= 0.5f) ? 2.0f * bot * top : 1.0f - 2.0f*(1.0f - bot)*(1.0f - top);
+}
+float4 overlay(float4 bot, float4 top)
+{
+	float4 res = bot.a + top.a - bot.a * top.a;
+	float tr = top.a / res.a;
+	float3 b = float3(overlay_b(bot.r, top.r), overlay_b(bot.g, top.g), overlay_b(bot.b, top.b));
+	res.rgb = (1.0f - tr)*bot.rgb + tr*((1.0f - bot.a)*top.rgb + bot.a * b);
+	return res;
+}
+float4 overlay_s(float4 bot, float4 top)
+{
+	float4 res = bot.a;
+	res.rgb = float3(overlay_b(bot.r, top.r), overlay_b(bot.g, top.g), overlay_b(bot.b, top.b));
+	res.rgb = res.rgb *top.a + bot.rgb*(1.0f - top.a);
+	return res;
+}
+
+///////////////////////// softlight
+float softlight_b(float b, float t)
+{
+	float d = (b <= 0.25f) ? ((16.0f * b - 12.0f) * b + 4.0f) * b : sqrt(b);
+	return (t <= 0.5f) ? b - (1.0f - 2.0f * t) * b * (1.0f - b) : b + (2.0f * t - 1.0f)*(d-b);
+}
+float4 softlight(float4 bot, float4 top)
+{
+	float4 res = bot.a + top.a - bot.a * top.a;
+	float tr = top.a / res.a;
+	float3 b = float3(softlight_b(bot.r, top.r), softlight_b(bot.g, top.g), softlight_b(bot.b, top.b));
+	res.rgb = (1.0f - tr)*bot.rgb + tr*((1.0f - bot.a)*top.rgb + bot.a * b);
+	return res;
+}
+
+
+/////////////////////////// inner glow blends
+float4 lighten_ig(float4 bot, float4 top)
+{
+	float4 res = bot.a;
+	float tr = top.a / res.a;
+	float3 b = float3(max(bot.r, top.r), max(bot.g, top.g), max(bot.b, top.b));
+	res.rgb = (1.0f - tr)*bot.rgb + tr*((1.0f - bot.a)*top.rgb + bot.a * b);
+
+	return res;
+}
+float4 screen_ig(float4 bot, float4 top)
+{
+	float4 res = bot.a;
+	float tr = top.a / res.a;
+	float3 b = bot.rgb + top.rgb - (bot.rgb * top.rgb);
+	res.rgb = (1.0f - tr)*bot.rgb + tr*((1.0f - bot.a)*top.rgb + bot.a * b);
+	return res;
+}
+float4 overlay_ig(float4 bot, float4 top)
+{
+	float4 res = bot.a;
+	float tr = top.a / res.a;
+	float3 b = float3(overlay_b(bot.r, top.r), overlay_b(bot.g, top.g), overlay_b(bot.b, top.b));
+	res.rgb = (1.0f - tr)*bot.rgb + tr*((1.0f - bot.a)*top.rgb + bot.a * b);
+	return res;
+}
+
+
+///////////////////////// gradients
+
+float4 grad_color_b(Texture2D gTex, StructuredBuffer <float> dt, int pos, float size, int textureRow)
+{
+	float h = dt[pos] / size;
+	h = (h > 1.0f) ? 1.0f : h;
+	float t = h;
+	return gTex[int2(int(t*255.0f), textureRow)];
+}
+
+float4 grad_color_bb(Texture2D gTex, StructuredBuffer <float> dt, StructuredBuffer <float> dt1, int pos, float size, int textureRow)
+{
+	float h = dt[pos] / size;
+	float h1 = dt1[pos] / size;
+
+	h = (h > 0.5f) ? 0.5f : h;
+	h1 = (h1 > 0.5f) ? 0.5f : h1;
+	float h2 = h + 0.5f - h1;
+	float t = h2;
+	return gTex[int2(int(t*255.0f), textureRow)];
+}
+
+//return color from gradient texture, prev clamped t
+float4 grad_color_tt(Texture2D gTex, float t, int textureRow)
+{
+	float tr = clamp(t, 0.0f, 1.0f) * 255.0f;
+	return gTex[int2(int(tr), textureRow)];
+}
+
+float4 grad_color_tl(Texture2D gTex, float angle, float2 uvpos, float4 uvrect, float2 uvExt, float2 addsize_uv, float type, int textureRow)
+{
+	float2 Cpos = float2(uvrect.z + uvrect.x, uvrect.w + uvrect.y) * 0.5f;
+	float2 dUV = float2(uvrect.z - uvrect.x, uvrect.w - uvrect.y);// -2.0f * uvExt;
+	//dUV *= 0.7f; dUV += (2.0f*addsize_uv);
+	
+	uvpos -= Cpos;
+
+	float t = 0;
+	if (type == 0.0f) //Linear
+	{
+		float cosa = cos(angle);
+		float sina = sin(angle);
+
+		matrix <float, 2, 2> fMatrix = {
+			cosa, -sina, 
+			sina, cosa 
+		};
+
+		float2 uvposR = mul(fMatrix, uvpos);
+		t = clamp(uvposR.x / length(dUV), -0.50f, 0.50f) + 0.5f;
+	}
+
+	else if (type == 1.0f) // radial 
+	{
+		t = clamp(length(uvpos)*2.0f / length(dUV), 0.0f, 1.0f);
+	}
+
+	else if (type == 2.0f) // angle
+	{
+		float pangle = acos(dot(float2(1, 0), uvpos ) / (length(uvpos)));
+		if (uvpos.y < 0.0f)
+		{
+			pangle = PI2 - pangle;
+		}
+		pangle = pangle + PI2 - angle;
+
+		int n = pangle /PI2;
+		t = 1.0f - clamp((pangle - (float)n*PI2) / PI2, 0.0f, 1.0f);
+	}
+
+	else if (type == 3.0f) //Reflected
+	{
+		float cosa = cos(angle);
+		float sina = sin(angle);
+
+		matrix <float, 2, 2> fMatrix = {
+			cosa, -sina,
+			sina, cosa
+		};
+
+		float2 uvposR = mul(fMatrix, uvpos);//float2 G = float2 (cos(angle), sin(angle));float prUVG = dot(G, uvpos) / length(G); 
+		t = abs(clamp(uvposR.x / length(dUV), -0.50f, 0.50f) * 2.0f);
+	}
+
+	else if (type == 4.0f) // romb
+	{
+		float cosa = cos(angle);
+		float sina = sin(angle);
+
+		matrix <float, 2, 2> fMatrix = {
+			cosa, -sina, // row 1
+			sina, cosa // row 2
+		};
+
+		float2 uvposR = mul(fMatrix ,uvpos);//float2 uvposR = float2 ( uvpos.x * cos(angle)-uvpos.y*sin(angle), uvpos.x * sin(angle) + uvpos.y*cos(angle));
+		t = clamp((abs(uvposR.x) + abs(uvposR.y))*2.0f / (dUV.x+dUV.y), 0.0f, 1.0f);
+	}
+	return gTex[int2(int(t*255.0f), textureRow)];
+}
+
+float4 grad_color_b(StructuredBuffer <float4> gBuf, StructuredBuffer <float> dt, bool inSide, int pos, float size, int textureRow)
+{
+	float d =(inSide)? dt[pos] : -(gInputBufferfloat[pos] - 1.0f);
+	d = (d < 0) ? 0 : d;
+
+	float h = d / size;
+	h = (h > 1.0f) ? 1.0f : h;
+	float t = h;
+	return gBuf[int(t*255.0f) + 256*textureRow];
+}
+
+float4 grad_color_bb(StructuredBuffer <float4> gBuf, StructuredBuffer <float> dt, StructuredBuffer <float> dt1, int pos, float size, int textureRow)
+{
+	float h = dt[pos] / size;
+	float h1 = dt1[pos] / size;
+
+	h = (h > 0.5f) ? 0.5f : h;
+	h1 = (h1 > 0.5f) ? 0.5f : h1;
+	float h2 = h + 0.5f - h1;
+	float t = h2;
+	return gBuf[int(t*255.0f) + 256 * textureRow];
+}
+
+//return color from gradient buffer, prev clamped t
+float4 grad_color_tt(StructuredBuffer <float4> gBuf, float t, int textureRow)
+{
+	float tr = clamp(t, 0.0f, 1.0f) * 255.0f;
+	return gBuf[int(t*255.0f) + 256 * textureRow];
+}
+
+float4 grad_color_tl(StructuredBuffer <float4> gBuf, float angle, float2 uvpos, float4 uvrect, float2 uvExt, float2 addsize_uv, float type, int textureRow)
+{
+	float2 Cpos = float2(uvrect.z + uvrect.x, uvrect.w + uvrect.y) * 0.5f;
+	float2 dUV = float2(uvrect.z - uvrect.x, uvrect.w - uvrect.y);// -2.0f * uvExt;
+																  //dUV *= 0.7f; dUV += (2.0f*addsize_uv);
+
+	uvpos -= Cpos;
+
+	float t = 0;
+	if (type == 0.0f) //Linear
+	{
+		float cosa = cos(angle);
+		float sina = sin(angle);
+
+		matrix <float, 2, 2> fMatrix = {
+			cosa, -sina,
+			sina, cosa
+		};
+
+		float2 uvposR = mul(fMatrix, uvpos);
+		t = clamp(uvposR.x / length(dUV), -0.50f, 0.50f) + 0.5f;
+	}
+
+	else if (type == 1.0f) // radial 
+	{
+		t = clamp(length(uvpos)*2.0f / length(dUV), 0.0f, 1.0f);
+	}
+
+	else if (type == 2.0f) // angle
+	{
+		float pangle = acos(dot(float2(1, 0), uvpos) / (length(uvpos)));
+		if (uvpos.y < 0.0f)
+		{
+			pangle = PI2 - pangle;
+		}
+		pangle = pangle + PI2 - angle;
+
+		int n = pangle / PI2;
+		t = 1.0f - clamp((pangle - (float)n*PI2) / PI2, 0.0f, 1.0f);
+	}
+
+	else if (type == 3.0f) //Reflected
+	{
+		float cosa = cos(angle);
+		float sina = sin(angle);
+
+		matrix <float, 2, 2> fMatrix = {
+			cosa, -sina,
+			sina, cosa
+		};
+
+		float2 uvposR = mul(fMatrix, uvpos);//float2 G = float2 (cos(angle), sin(angle));float prUVG = dot(G, uvpos) / length(G); 
+		t = abs(clamp(uvposR.x / length(dUV), -0.50f, 0.50f) * 2.0f);
+	}
+
+	else if (type == 4.0f) // romb
+	{
+		float cosa = cos(angle);
+		float sina = sin(angle);
+
+		matrix <float, 2, 2> fMatrix = {
+			cosa, -sina, // row 1
+			sina, cosa // row 2
+		};
+
+		float2 uvposR = mul(fMatrix, uvpos);//float2 uvposR = float2 ( uvpos.x * cos(angle)-uvpos.y*sin(angle), uvpos.x * sin(angle) + uvpos.y*cos(angle));
+		t = clamp((abs(uvposR.x) + abs(uvposR.y))*2.0f / (dUV.x + dUV.y), 0.0f, 1.0f);
+	}
+	return gBuf[int(t*255.0f) + 256 * textureRow];
+}
+
+float4 grad_color_tl(StructuredBuffer <float4> gBuf, float angle, float2 uvpos, float4 uvrect, float2 uvExt, float2 addsize_uv, bool isLinear, bool isRadial, bool isAngle,bool isReflected, int textureRow)
+{
+	float2 Cpos = float2(uvrect.z + uvrect.x, uvrect.w + uvrect.y) * 0.5f;
+	float2 dUV = float2(uvrect.z - uvrect.x, uvrect.w - uvrect.y);// -2.0f * uvExt;
+																  //dUV *= 0.7f; dUV += (2.0f*addsize_uv);
+
+	uvpos -= Cpos;
+
+	float t = 0;
+	if (isLinear) //Linear
+	{
+		float cosa = cos(angle);
+		float sina = sin(angle);
+
+		matrix <float, 2, 2> fMatrix = {
+			cosa, -sina,
+			sina, cosa
+		};
+
+		float2 uvposR = mul(fMatrix, uvpos);
+		t = clamp(uvposR.x / length(dUV), -0.50f, 0.50f) + 0.5f;
+	}
+
+	else if (isRadial) // radial 
+	{
+		t = clamp(length(uvpos)*2.0f / length(dUV), 0.0f, 1.0f);
+	}
+
+	else if (isAngle) // angle
+	{
+		float pangle = acos(dot(float2(1, 0), uvpos) / (length(uvpos)));
+		if (uvpos.y < 0.0f)
+		{
+			pangle = PI2 - pangle;
+		}
+		pangle = pangle + PI2 - angle;
+
+		int n = pangle / PI2;
+		t = 1.0f - clamp((pangle - (float)n*PI2) / PI2, 0.0f, 1.0f);
+	}
+
+	else if (isReflected) //Reflected
+	{
+		float cosa = cos(angle);
+		float sina = sin(angle);
+
+		matrix <float, 2, 2> fMatrix = {
+			cosa, -sina,
+			sina, cosa
+		};
+
+		float2 uvposR = mul(fMatrix, uvpos);//float2 G = float2 (cos(angle), sin(angle));float prUVG = dot(G, uvpos) / length(G); 
+		t = abs(clamp(uvposR.x / length(dUV), -0.50f, 0.50f) * 2.0f);
+	}
+
+	else  // romb
+	{
+		float cosa = cos(angle);
+		float sina = sin(angle);
+
+		matrix <float, 2, 2> fMatrix = {
+			cosa, -sina, // row 1
+			sina, cosa // row 2
+		};
+
+		float2 uvposR = mul(fMatrix, uvpos);//float2 uvposR = float2 ( uvpos.x * cos(angle)-uvpos.y*sin(angle), uvpos.x * sin(angle) + uvpos.y*cos(angle));
+		t = clamp((abs(uvposR.x) + abs(uvposR.y))*2.0f / (dUV.x + dUV.y), 0.0f, 1.0f);
+	}
+	return gBuf[int(t*255.0f) + 256 * textureRow];
+}
+
+int getpos(int2 pos, int w)
+{
+	return pos.y * w + pos.x;
+}
+
+int2 getpos(int pos, int w)
+{
+	int y = pos / w;
+	return int2(pos - y * w , y);
+}
+
+float boxblur(StructuredBuffer <float> buf, int pos, int radius, int w, int h)
+{
+	int2 p0 = getpos(pos, w);
+	float sum = 0.0f;
+	float size = 2.0f * radius + 1.0f;
+	float sqSize = size*size;
+	for (int y = p0.y - radius; y <= p0.y + radius; y++) 
+	{
+		for (int x = p0.x - radius; y < p0.x + radius; x++)
+		{
+			y = clamp(y, 0, h);
+			x = clamp(x, 0, w);
+			int p = getpos(int2(x,y), w);
+			sum += buf[p];
+
+		}
+	}
+	return sum / sqSize;
+}
+
+///////////////////////// contour
+float contour_t(Texture2D cTex, float t)
+{
+	float t255 = t*255.0f;
+	int p0 = int(t255);
+	int p1 = p0 + 1;
+	float r = t255 - (float)p0;
+	float c0 = cTex[int2(clamp(p0, 0, 255), 0)].r;
+	float c1 = cTex[int2(clamp(p1, 0, 255), 0)].r;
+	return lerp(c0, c1, r);
+
+	//return cTex[int2( clamp(int(t*255.0f), 0, 255), 0)].r;
+}
+
+float contour_b(StructuredBuffer <float> cBuf, float t)
+{
+	float length = cBuf.Length.x;
+	float ti = t*(length - 1.0f);
+	int p0 = ti;
+	int p1 = p0 + 1;
+	float r = ti - (float)p0;
+	float c0 = cBuf[p0];	//float c0 = cBuf[int(clamp(p0, 0, length))];
+	float c1 = cBuf[int(min(p1, length))]; //c1 = cBuf[int(clamp(p1, 0, length))];
+	return lerp(c0, c1, r);
+}
+
+//create Outer Glow Prec for size  - in ext, and out data to texture  - RWTexture2D<float> gOutputVf;
+float  outerglowprec(float d)
+{
+	float rad = ext + 0.5f;
+	float s = spread;
+
+	float s1 = (s >= 0.5f) ? (s - 0.5f) *2.0f*rad : 0.5f * rad* s * 2.0f;
+
+	if (d > rad)
+	{
+		return 0.0f;
+	}
+	else
+	{
+		float f = (s >= 0.5f) ? d / (s1 - rad) + rad / (rad - s1) : (0.5f * rad + s1)*(1.0f - d / rad) / rad;
+		return clamp(f, 0.0f, 1.0f);
+	}
+}
+
+float  outerglowsoft(float d)
+{
+	float radius = ext;
+	float alpha = 0.0f;
+
+	if (d <= radius)
+	{
+		alpha = 1.0f;
+	}
+	else if (d < radius + 1)
+	{
+		float distance = d - radius;
+		alpha = 1.0f - distance;
+	}
+	else
+	{
+		alpha = 0.0f;
+	}
+	return alpha;
+}
+
+
+//////////////////////////////////////////////
+[numthreads(32, 32, 1)]
+void CSCombiner(int3 groupThreadID : SV_GroupThreadID, int3 dispatchThreadID : SV_DispatchThreadID)
+{
+	/*
+	Input:
+		Texture2D gInputV - RGBA source face;
+		StructuredBuffer<float2> gInputVBufferA; // uvmap
+
+		close shadow textures:
+			Texture2D gInputX - close shadow R8;
+			StructuredBuffer <float> fBInputE - close shadow contour;
+		inner shadow options:
+			float4 csColor - color
+			float4 csOptions - inner shadow Options ; x - use; y -  angle ; z- distance; w -  );
+
+
+		outer glow textures:
+			Texture2D gInputH - outer glow R8;
+		buffers
+			gInputBufferF4A - outer glow gradient buffer position - 3;
+			StructuredBuffer <float> fBInputD - outer glow contour;
+		outer glow options:
+			float4 ogColor - color
+			float4 ogOptions - outer Glow Options ; x - use; y -  range ; z- use gradient; w - 0 - precize , 1-soft
+
+
+		stroke textures:
+			Texture2D gInputA - stroke inner R8;
+			Texture2D gInputD - stroke outer R8;
+			Texture2D gInputC - stroke pattern;
+		stroke buffers
+			StructuredBuffer <float> gInputBufferfloat - dt inner;
+			gInputBufferF4A - stroke gradient buffer position - 0;
+			StructuredBuffer<float> fBInputA - dt outer;
+		stroke options:
+			float4 strColor - color
+			float4 strOptions - stroke Options ;
+								x - size;
+								y - gradient type (0 - linear, 1-Radial, 2-Angle, 3-Reflected, 4-Diamond, 5-ShapeBurst);
+								z - gradient angle;
+								w - extPixels;)
+			bool sUse - use stroke
+			bool sUseIn - use inner stroke
+			bool sUseG - use gradient
+
+
+		inner glow textures:
+			Texture2D gInputP - inner glow R8;
+		buffers:
+			gInputBufferF4A - inner glow gradient buffer position - 1;
+			StructuredBuffer <float> fBInputC - inner glow contour;
+		inner glow options:
+			float4 igColor - color
+			float4 igOptions - inner Glow Options ; x - use; y -  range ; z- use gradient; w - blend mode (0 - lighten, 1 -screen , 2 - overlay );
+
+
+		bevel textures:
+			Texture2D gInputE - bevel light R8;
+			Texture2D gInputF - bevel shadow R8;
+		bevel options:
+			float4 bevLColor  - light color
+			float4 bevSColor  - shadow color
+
+			bool bUse - use bevel
+			bool bUseIn - use inside
+			bool bUseSD - use shadows darken
+			bool bUseLL - use light lighten
+			bool bUseLS - use light screen
+
+		inner shadow textures:
+			Texture2D gInputT - inner shadow R8;
+			StructuredBuffer <float> fBInputB - inner shadow contour;
+		inner shadow options:
+			bool isUse - use
+			bool isUseM - multiplay 
+			bool isUseD - darken
+			float4 isColor - color
+			float4 isOptions - inner shadow Options ; 0; y -  angle ; z- distance; w - 0;
+
+
+		face color options:
+			float4 fcColor - color
+			float4 fcOptions - face color Options ; x - use; y -  ; z- ; w - blend mode (Normal - 0, Lighten - 1, Screen - 2, Overlay -3, Darken -4, Multiplay-5 );
+
+
+		face gradient texture:
+			Texture2D gInputG - face dt map;
+		buffers:
+			gInputBufferF4A - face gradient buffer position - 2;
+		float4 fgOptions - face gradient Options ;
+			x - 0;
+			y - angle (radian)
+			z - gradient type (0 - linear, 1-Radial, 2-Angle, 3-Reflected, 4-Diamond, 5-ShapeBurst);
+			w - 0;
+
+			bool fgUse - use;
+			bool fgUseN - normal;
+			bool fgUseL - lighten;
+			bool fgUseS - screen;
+			bool fgUseO - overlay;
+			bool fgUseD - darken;
+		face pattern texture:
+			Texture2D gInputK - face pattern;
+		float4 fpOptions -  face pattern options;
+			x- use
+			y - opacity
+			z- scale
+			w - blend mode (Normal - 0, Lighten - 1, Screen - 2, Overlay -3, Darken -4, Multiplay-5 );
+	Output:
+		gOutputV - combined texture RGBA;
+	*/
+	
+	float w = gInputV.Length.x;
+	float h = gInputV.Length.y;
+	float x = dispatchThreadID.x;
+	float y = dispatchThreadID.y;
+	
+	if (y < h && x < w)
+	{
+		int pos = y * w + x;
+
+		float4 face = gInputV[dispatchThreadID.xy];
+		float4 cap = face;
+
+		float4 res = face;
+		float4 cshad = 0;
+		float4 cshad_1 = 0;
+		float4 oglow = 0;
+		float4 stroke = 0;
+
+		res.rgba = clamp(res.rgba, 0.0f, 1.0f);
+
+		//close shadow
+		if (csUse) // if use close  shadow
+		{
+			float dCos = csOptions.y;
+			float dSin = csOptions.z;
+			float2 newPos = float2(x + dCos, y + dSin);
+
+			cshad = (newPos.x >= w || newPos.y >= h) ? float4(1, 1, 1, 0) : float4(1, 1, 1, gInputX[newPos].r); //cshad.a = clamp(cshad.a, 0.001f, 1); //1
+			cshad = cshad * csColor;//	cshad.a = clamp(cshad.a, 0.001f, 1); //2
+			cshad.a = contour_b(fBInputE, cshad.a);
+			cshad.rgba = max(cshad.rgba, 0.001f); //3 cshad.rgba = clamp(cshad.rgba, 0.001f, 1.0f); //3
+		}
+
+		//close shadow (1)
+		if (csUse_1) // if use close  shadow (1)
+		{
+			float dCos = csOptions_1.y;
+			float dSin = csOptions_1.z;
+			float2 newPos = float2(x + dCos, y + dSin);
+
+			cshad_1 = (newPos.x >= w || newPos.y >= h) ? float4(1, 1, 1, 0) : float4(1, 1, 1, gInputX1[newPos].r); //cshad_1.a = clamp(cshad_1.a, 0.001f, 1);
+			cshad_1 = cshad_1 * csColor_1;//cshad_1.a = clamp(cshad_1.a, 0.001f, 1);
+			cshad_1.a = contour_b(fBInputE1, cshad_1.a);
+			cshad.rgba = max(cshad.rgba, 0.001f); //cshad_1.rgba = clamp(cshad_1.rgba, 0.001f, 1.0f);
+		}
+
+		//outer glow
+		if (ogUse) 
+		{
+			oglow = float4(1, 1, 1, gInputH[dispatchThreadID.xy].r);				//float ogdt = max(0, -(gInputBufferfloat[pos] - 1.0f));
+			float ogrange = ogOptions;
+			oglow.a *=  ogrange;
+
+			oglow.a = clamp(oglow.a, 0.001f, 1);
+
+			if (ogUseG) // use gradient
+			{
+				float oga = oglow.a;
+				float4 og_gr = grad_color_tt(gInputBufferF4A, 1.0f - oglow.a, 3);	//3 - outer glow row in gradients
+				oglow = oglow * og_gr;
+				oglow.a = (oga < 0.25f) ? og_gr.a * oga * 4.0f : og_gr.a;
+			}
+			else
+			{
+				oglow = oglow * ogColor;
+			}
+			oglow.a = clamp(oglow.a, 0.001f, 1.0f);
+			oglow.a = contour_b(fBInputD, oglow.a); 
+			oglow.rgba = max(oglow.rgba, 0.001f);									//oglow.rgba = clamp(oglow.rgba, 0.001f, 1.0f);
+		}
+
+		//face pattern
+		if (fpUse)
+		{
+			float2 tSizeM1 = float2(fpOptions.x, fpOptions.w); //float2 tSize = gInputK.Length.xy;
+			float2 tSizeM1MS = float2(fpOptions.y, fpOptions.z);
+			float2 xyp = float2(x,y) / tSizeM1MS;
+			xyp = xyp - int2(xyp);		//float xp = fmod(x/fpScale, tSize.x-1.0f); //Returns the floating-point remainder (остаток) of x/y
+			xyp = xyp * tSizeM1;		//float yp = fmod(y/fpScale, tSize.y-1.0f);
+
+			float fpOpacity = fpOptionsOp;
+			float4 fpColor = gInputK[xyp] * fpOpacity; //float4 fpColor = gInputK[float2(xp, yp)] * fpOpacity;
+			float4 tRes = fpColor.a;
+			if (fpUseN)
+				tRes.rgb = fpColor.rgb;//res = normalpha_s(res, fpColor);
+			else if (fpUseL)
+				tRes.rgb = max(res.rgb, fpColor.rgb);//res = lighten_s(res, fpColor);
+			else if (fpUseS)
+				tRes.rgb = 1.0f - (1.0f - res.rgb)*(1.0f - fpColor.rgb);//res = screen_s(res, fpColor);
+			else if (fpUseO)
+				tRes.rgb = float3(overlay_b(res.r, fpColor.r), overlay_b(res.g, fpColor.g), overlay_b(res.b, fpColor.b));//res = overlay_s(res, fpColor);
+			else if (fpUseD)
+				tRes.rgb = float3 (min(fpColor.r, res.r), min(fpColor.g, res.g), min(fpColor.b, res.b));//res = darken_s(res, fpColor);
+			else
+				tRes.rgb = fpColor.rgb*res.rgb; //res = multiplay_s(res, fpColor);
+				
+			tRes.rgb = tRes.rgb *  fpColor.a + res.rgb*(1.0f - fpColor.a);
+			res.rgb = clamp(tRes.rgb, 0.0f, 1.0f);//res.rgb = clamp(res.rgb, 0.0f, 1.0f);
+			
+			cap = res;
+		}
+
+		//face gradient
+		if (fgUse)
+		{
+			float4 fgColor = 1;
+			float fgType = fgOptions.z;
+			float fgAngle = fgOptions.y;
+			
+			if (fgUseTBu) // use ShapeBurst gradient
+			{
+				fgColor = grad_color_tt(gInputBufferF4A, gInputG[dispatchThreadID.xy].r, 2);
+			}
+			else // use Linear, Radial, Angle, Reflected, Diamond  gradient  
+			{
+				float2 uvExt = 0; 
+				float2 addsizeuv = 0; 
+				fgColor = grad_color_tl(gInputBufferF4A,  fgAngle, gInputVBufferA [pos],  float4 (0, 0, 1.0f, 1.0f), uvExt, addsizeuv, fgUseTLi, fgUseTRa, fgUseTAn, fgUseTRe, 2); // 2 row in gradients
+			}
+			float4 tRes = fgColor.a;
+			if (fgUseN)
+				tRes.rgb = fgColor.rgb;//res = normalpha_s(res, fgColor);
+			else if (fgUseL)
+				tRes.rgb = max(res.rgb, fgColor.rgb);//res = lighten_s(res, fgColor);
+			else if (fgUseS)
+				tRes.rgb = 1.0f - (1.0f - res.rgb)*(1.0f - fgColor.rgb);//res = screen_s(res, fgColor);
+			else if (fgUseO)
+				tRes.rgb = float3(overlay_b(res.r, fgColor.r), overlay_b(res.g, fgColor.g), overlay_b(res.b, fgColor.b));//res = overlay_s(res, fgColor);
+			else if (fgUseD)
+				tRes.rgb = float3 (min(fgColor.r, res.r), min(fgColor.g, res.g), min(fgColor.b, res.b));//res = darken_s(res, fgColor);
+			else
+				tRes.rgb = fgColor.rgb*res.rgb;//res = multiplay_s(res, fgColor);
+			
+			tRes.rgb = tRes.rgb *  fgColor.a + res.rgb*(1.0f - fgColor.a);
+			res.rgb = clamp(tRes.rgb, 0.0f, 1.0f);//res.rgb = clamp(res.rgb, 0.0f, 1.0f); // иначе не работала обводка
+			cap = res;
+		}
+
+		//face color
+		if (fcUse)
+		{
+			float4 tRes = fcColor.a;
+			if (fcUseN)
+				tRes.rgb = fcColor.rgb; //res = normalpha_s(res, fcColor);
+			else if(fcUseL)
+				tRes.rgb = max(res.rgb, fcColor.rgb);//res = lighten_s(res, fcColor);
+			else if (fcUseS)
+				tRes.rgb = 1.0f - (1.0f - res.rgb)*(1.0f - fcColor.rgb);//res = screen_s(res, fcColor);
+			else if (fcUseO)
+				tRes.rgb = float3(overlay_b(res.r, fcColor.r), overlay_b(res.g, fcColor.g), overlay_b(res.b, fcColor.b));//res = overlay_s(res, fcColor);
+			else if (fcUseD)
+				tRes.rgb = float3 (min(fcColor.r, res.r), min(fcColor.g, res.g), min(fcColor.b, res.b));//res = darken_s(res, fcColor);
+			else 
+				tRes.rgb = fcColor.rgb*res.rgb;//res = multiplay_s(res, fcColor);
+
+			tRes.rgb = tRes.rgb *  fcColor.a + res.rgb*(1.0f - fcColor.a);
+			res.rgb = clamp(tRes.rgb, 0.0f, 1.0f);//res.rgba = clamp(res.rgba, 0.0f, 1.0f); // иначе не работала обводка
+			cap = res;
+		}
+
+		//inner glow
+		if (igUse) // if use inner glow
+		{
+			float4 iglow = float4(1, 1, 1, gInputP[dispatchThreadID.xy].r);
+			float igrange = igOptions.y;
+
+			iglow.a *= (100.0f / igrange);
+			iglow.a = clamp(iglow.a, 0, 1);
+
+			if (igUseG) // use gradient
+			{
+				float iga = iglow.a;
+				float4 ig_gr = grad_color_tt(gInputBufferF4A, 1.0f - iglow.a, 1);
+				iglow = iglow * ig_gr;
+				iglow.a = (iga < 0.025f) ? ig_gr.a * iga * 40.0f / 9.0f : ig_gr.a;
+			}
+			else
+			{
+				iglow = iglow * igColor;
+			}
+
+			iglow.a = clamp(iglow.a, 0, 1);
+			iglow.a = contour_b(fBInputC, iglow.a); //iglow.a = contour_t(gInputS, iglow.a);
+			float4 tRes = iglow.a;
+			if (igUseL)
+				tRes.rgb = max(res.rgb, iglow.rgb);//res = lighten_s(res, iglow);
+			else if (igUseS)
+				tRes.rgb = 1.0f - (1.0f - res.rgb)*(1.0f - iglow.rgb);//res = screen_s(res, iglow);
+			else
+				tRes.rgb = float3(overlay_b(res.r, iglow.r), overlay_b(res.g, iglow.g), overlay_b(res.b, iglow.b));//res = overlay_s(res, iglow);
+
+
+			tRes.rgb = tRes.rgb *  iglow.a + res.rgb*(1.0f - iglow.a);
+			res.rgb = clamp(tRes.rgb, 0.0f, 1.0f);//res.rgb = clamp(res.rgb, 0.0f, 1.0f); // иначе не работала обводка
+			cap = res;
+		}
+
+		//inner shadow
+		if (isUse) // if use inner  shadow
+		{
+			float2 isPos = dispatchThreadID.xy;
+			float dCos = isOptions.y;
+			float dSin = isOptions.z;
+			float2 newPos = float2(isPos.x + dCos, isPos.y + dSin);
+			float4 ishad = (newPos.x >= w || newPos.y >= h) ? float4(1, 1, 1, 1) : float4(1, 1, 1, gInputT[newPos].r);
+			ishad.a = clamp(ishad.a, 0, 1);
+
+			// offset & repeat edge pixels
+
+			ishad.a = (face.a <= 0.0f) ? 0.0f : ishad.a;
+
+			ishad = (ishad)* isColor;
+
+			ishad.a = clamp(ishad.a, 0, 1);
+
+			ishad.a = contour_b(fBInputB, ishad.a);// ishad.a = contour_t(gInputU, ishad.a);
+			float4 tRes = ishad.a;
+			if (isUseM)
+				tRes.rgb = ishad.rgb*res.rgb;//res = multiplay_s(cap, ishad);
+			else if(isUseD)
+				tRes.rgb = float3 (min(ishad.r, res.r), min(ishad.g, res.g), min(ishad.b, res.b));//res = darken_s(cap, ishad);
+			else  
+				tRes.rgb = ishad.rgb; //res = normalpha_s(cap, ishad);
+
+			tRes.rgb = tRes.rgb *  ishad.a + res.rgb*(1.0f - ishad.a);
+			res.rgb = clamp(tRes.rgb, 0.0f, 1.0f); //res.rgb = clamp(res.rgb, 0.0f, 1.0f); // иначе не работала обводка
+			cap = res;
+		}
+
+		// stroke
+		if (sUse) // if use stroke
+		{
+			float4 s_color = 1;
+			stroke = float4(1, 1, 1, gInputA[dispatchThreadID.xy].r);
+			s_color = strColor;
+
+			if (sUseG) // use gradient
+			{
+				if (sUseTBu) // use ShapeBurst gradient
+				{
+					s_color = grad_color_b(gInputBufferF4A, gInputBufferfloat, (strOptions.w == 0.0f), pos, strOptions.x, 0);
+				}
+				else // use Linear, Radial, Angle, Reflected, Diamond  gradient
+				{
+					float2 uvExt = float2((float)strOptions.w / w, (float)strOptions.w / h);
+					float2 strokesizeuv = float2(strOptions.x / w, strOptions.x / h);
+					s_color = grad_color_tl(gInputBufferF4A, strOptions.z, gInputVBufferA[pos],  float4 (0, 0, 1, 1), uvExt, strokesizeuv, sUseTLi, sUseTRa, sUseTAn, sUseTRe, 0);
+				}
+			}
+
+		/*
+			else if (strOptions.z == 2.0f) // use pattern
+			{
+				float spScale = 1.0f;
+				int2 tSize = gInputC.Length.xy;
+				int xp = fmod((float)x / spScale, tSize.x - 1);
+				int yp = fmod((float)y / spScale, tSize.y - 1);
+
+				float spOpacity = 1.0f;
+				float4 spColor = gInputC[int2(xp, yp)] * spOpacity;
+				s_color = spColor;
+			}
+		*/
+			if (!sUseIn)// use outer stroke
+			{
+				res = normalpha_cut(stroke * s_color, res);
+				res.rgba = clamp(res.rgba, 0.0f, 1.0f);
+			}
+
+			else // use inner stroke 
+			{
+
+				// remove face pixels
+				stroke = (face.a < 1.0f) ? face : stroke;
+				float4 s_face = cap;
+				s_face.a = clamp(face.a - stroke.a, 0, 1);
+				stroke = float4 (1, 1, 1, face.a);
+				stroke.rgba = clamp(stroke.rgba, 0.0f, 1.0f);
+				stroke *= s_color;
+				res = normalpha_cut(stroke, s_face);
+				res.rgba = clamp(res.rgba, 0.0f, 1.0f);
+				cap = res;
+			}
+		}
+
+		if(ogUse) 
+			res = normalpha(oglow, res);
+		if(csUse) 
+			res = normalpha(cshad, res);
+		if (csUse_1)
+			res = normalpha(cshad_1, res);
+		
+
+		//bevel
+		if (bUse)
+		{
+			float light_alpha = gInputE[dispatchThreadID.xy].r;
+			float4 lightMap = 0;
+			float shadow = gInputF[dispatchThreadID.xy].r;
+			float4 shadowMap = 0;
+
+			if (bUseIn) //inside
+			{
+				if (light_alpha > 0 && face.a > 0)
+				{
+					lightMap.a = light_alpha * face.a;
+					lightMap.rgb = 1.0f;
+					lightMap *= bevLColor;
+
+					if (bUseLL)
+						res = lighten(res, lightMap);
+					else if (bUseLS)
+						res = screen(res, lightMap);
+					else
+						res = overlay(res, lightMap);
+				}
+
+				if (face.a > 0)
+				{
+					shadowMap = 1.0f;
+					shadowMap.a = shadow * face.a; // 161117
+					shadowMap *= bevSColor;
+
+					if (bUseSD)
+						res = darken_s(res, shadowMap);
+					else
+						res = multiplay_s(res, shadowMap);
+				}
+			}
+
+			else  //outside
+			{
+				lightMap.a = light_alpha;
+				lightMap.rgb = 1.0f;
+				lightMap *= bevLColor;
+
+				if (bUseLL)
+					res = lighten_s(res, lightMap);
+				else if (bUseLS)
+					res = screen_s(res, lightMap);
+				else
+					res = overlay_s(res, lightMap);
+
+
+				shadowMap = 1.0f;
+				shadowMap.a = shadow;
+				shadowMap *= bevSColor;
+
+				if (bUseSD)
+					res = darken_s(res, shadowMap);
+				else
+					res = multiplay_s(res, shadowMap);
+
+				res = normalpha(res, cap); // restore cap
+			}
+		}
+
+		gOutputV[dispatchThreadID.xy] = res;
+	}
+}
+
+//////////////////////////////////////////////
+[numthreads(32, 32, 1)]
+void CSShadowCombiner(int3 groupThreadID : SV_GroupThreadID, int3 dispatchThreadID : SV_DispatchThreadID)
+{
+	/*
+	Input:
+	shadow textures:
+		Texture2D gInputV - R8 blured;
+		Texture2D gInputH -  noise;
+		Texture2D gInputA - contour;
+
+		shadow options:
+		float fSize -  noise
+	Output:
+		gOutputV - combined texture RGBA;
+	*/
+
+	int w = gInputV.Length.x;
+	int h = gInputV.Length.y;
+	int x = dispatchThreadID.x;
+	int y = dispatchThreadID.y;
+
+	if (y < h && x < w)
+	{
+		int pos = y * w + x;
+		float4 shadow = clamp(gInputV[dispatchThreadID.xy].r, 0.0f, 1.0f);
+
+		shadow.a =  contour_t(gInputA, shadow.a);
+		shadow.a = clamp(shadow.a, 0.0f, 1.0f);
+		shadow.a = (shadow.r == 0) ? 0 : shadow.a;
+
+		float noiseSize = fSize;
+		if (noiseSize > 0) // use noise
+		{
+			int2 tSize = gInputH.Length.xy;
+			int xp = fmod((float)x, tSize.x - 1);
+			int yp = fmod((float)y, tSize.y - 1);
+			float4 noise = gInputH[int2(xp,yp)].a;
+			float amp = (noise.a - 0.5f) * noiseSize;
+			float pY = 1.0f - noiseSize;
+			noise = amp + pY;
+			shadow.a *= noise.a;
+		}
+		gOutputV[dispatchThreadID.xy] = shadow;
+	}
+}
+
+////////////////////////////////////////////// Copy R8 Texture or float buffer to R8 Texture or float buffer 
+[numthreads(32, 32, 1)]
+void CSCopy(int3 groupThreadID : SV_GroupThreadID, int3 dispatchThreadID : SV_DispatchThreadID)
+{
+	/*
+	Input:
+		gInputV - texture input R8
+		StructuredBuffer <float> fBInputA;
+
+		int width
+		int height
+		bool boolA - input texture or buffer
+		bool boolB - output texture or buffer
+		bool boolC - use range
+		float range;
+	Output:
+		RWStructuredBuffer<float> gRWBufferAfloat;
+		RWTexture2D<float> gOutputVf;
+	*/
+	int y = dispatchThreadID.y;
+	int x = dispatchThreadID.x;
+	float w = width;
+	float h = height;
+	if (y < h && x < w)
+	{
+		if (boolB)
+		{
+			gOutputVf[dispatchThreadID.xy] = (boolA)? gInputV[dispatchThreadID.xy].r : fBInputA[y * w + x];
+		}
+		else // output to buffer
+		{
+			if(!boolC) gRWBufferAfloat[y * w + x] = (boolA) ? gInputV[dispatchThreadID.xy].r : fBInputA[y * w + x];
+			else gRWBufferAfloat[y * w + x] = (boolA) ? (2.0f * gInputV[dispatchThreadID.xy].r - 1.0f) * range :(2.0f* fBInputA[y * w + x] - 1.0f) * range;
+		}
+	}
+}
+
+//////////////////////////////////////////////
+[numthreads(32, 32, 1)]
+void CSCopyAR8(int3 groupThreadID : SV_GroupThreadID, int3 dispatchThreadID : SV_DispatchThreadID)
+{
+	gOutputVf[dispatchThreadID.xy] = gInputV[dispatchThreadID.xy].a;
+}
+
+//////////////////////////////////////////////
+[numthreads(32, 32, 1)]
+void CSInverse(int3 groupThreadID : SV_GroupThreadID, int3 dispatchThreadID : SV_DispatchThreadID)
+{
+	float4 col = gInputV[dispatchThreadID.xy];
+	gOutputV[dispatchThreadID.xy] = float4(1.0f-col.r, 1.0f-col.g, 1.0f-col.b, 1.0f- col.a);
+}
+
+//////////////////////////////////////////////
+[numthreads(32, 32, 1)]
+void CSInverse_R8FromAlpha(int3 groupThreadID : SV_GroupThreadID, int3 dispatchThreadID : SV_DispatchThreadID)
+{
+	float4 col = gInputV[dispatchThreadID.xy];
+	gOutputVf[dispatchThreadID.xy] = 1.0f - col.a;
+}
+
+//////////////////////////////////////////////
+int dir(int v) 
+{
+	if (v == 0) return 0;
+	if (v < 0) return -1;
+	return 1;
+}
+[numthreads(1, 1, 1)]
+void CSFullCopy (int3 groupID : SV_GroupID, int3 groupThreadID : SV_GroupThreadID, int3 dispatchThreadID : SV_DispatchThreadID)
+{
+	/*
+		Input textures:
+			gInputV
+		Input buffers:
+			gInputVBufferAInt - sorce UVs
+			gInputVBufferBInt - target UVs
+		Output texture:
+			gOutputV
+	*/
+
+	int letN = groupID.x;
+	int lm3 = letN * 3;
+
+	int2 V0 = gInputVBufferAInt[lm3];
+	int2 V1 = gInputVBufferAInt[lm3 + 1];
+	int2 V2 = gInputVBufferAInt[lm3 + 2];
+	// source vectors
+	int2 VE01 = V1 - V0;
+	int2 VE12 = V2 - V1;
+	int LVE01 = abs(VE01.x) + abs(VE01.y); //LVE01 = length(VE01);
+	int LVE12 = abs(VE12.x) + abs(VE12.y); //LVE12 = length(VE12);
+
+	int2 V0n = gInputVBufferBInt[lm3];
+	int2 V1n = gInputVBufferBInt[lm3 + 1];
+	int2 V2n = gInputVBufferBInt[lm3 + 2];
+	// new vectors
+	int2 VE01n =  V1n - V0n;
+	int2 VE12n =  V2n - V1n;
+
+	int2 VE01nNorm = int2(dir(VE01n.x), dir(VE01n.y));
+	int2 VE01Norm = int2(dir(VE01.x), dir(VE01.y));
+	int2 VE12nNorm = int2(dir(VE12n.x), dir(VE12n.y));
+	int2 VE12Norm = int2(dir(VE12.x), dir(VE12.y));
+
+	int2 pos_in;
+	int2 pos_i;
+	float4 col;
+	float4 cola = float4(1, 1, 1, 1);
+	// copy source pixels to the output
+	for(int lvi = 0; lvi < LVE12; lvi++) // LVE12
+	{
+		for(int lui = 0; lui < LVE01; lui++) // LVE01
+		{
+			pos_in = V0n + VE01nNorm * lui  + VE12nNorm * lvi;
+			pos_i  = V0 + VE01Norm * lui  + VE12Norm * lvi;
+
+			col = gInputV[pos_i];
+			cola.a = col.a;
+			gOutputV[pos_in] =(col.a>0)? col : cola;
+		}
+	}
+}
+
+//////////////////////////////////////////////
+[numthreads(32, 32, 1)]
+void CSFill(int3 groupID : SV_GroupID, int3 groupThreadID : SV_GroupThreadID, int3 dispatchThreadID : SV_DispatchThreadID)
+{
+	gOutputV[dispatchThreadID.xy] = eColor;
+}
+
+[numthreads(32, 32, 1)]
+void CSFill_R8(int3 groupID : SV_GroupID, int3 groupThreadID : SV_GroupThreadID, int3 dispatchThreadID : SV_DispatchThreadID)
+{
+	gOutputVf[dispatchThreadID.xy] = eColor.r;
+}
+
+
+// ----------------  MASK -----------------------------------------------------------------
+
+////////////////////////////////////////////// Create Mask buffer from a-channel of the RGBA texture
+[numthreads(32, 32 , 1)]
+void CSMask (int3 groupThreadID : SV_GroupThreadID, int3 dispatchThreadID : SV_DispatchThreadID)
+{
+	gRWBufferA[dispatchThreadID.x + dispatchThreadID.y * width]  = (gInputV[dispatchThreadID.xy].a > 0) ? 1 : 0;
+}
+
+//////////////////////////////////////////////Create Mask buffer from r-channel of the R8 texture
+[numthreads(32, 32, 1)]
+void CSMask_R8(int3 groupThreadID : SV_GroupThreadID, int3 dispatchThreadID : SV_DispatchThreadID)
+{
+	gRWBufferA[dispatchThreadID.x + dispatchThreadID.y * width] = (gInputV[dispatchThreadID.xy].r > 0) ? 1 : 0;
+}
+
+// ---------------- END MASK -----------------------------------------------------------------
+
+//
+//
+//
+//
+//
+//
+// ----------------  BEVEL -----------------------------------------------------------------
+
+
+float cutdt(float d, float r) 
+{
+	return (d > r) ? r : d;
+}
+
+float capdt(float d, float r)
+{
+	return (d >= r) ? 1.0f : 0;
+}
+
+float cutdt_substr(float d, float r, float s)
+{
+	float sub = (s > 0.0f) ? s - 1.0f : 0.0f;
+	float c = d - sub;
+	return (c > r) ? r : c;
+}
+
+float smoothaspar(float dt, float r)
+{
+	//return (sqrt(r*r - (dt - r)*(dt - r)));
+	return 1.0f*(r - (dt - r)*(dt - r) / r );
+}
+
+float cosine(int pos)
+{
+	float tgd = light.w; // tg25 * depth;
+	int w = width;
+	
+	// get normal
+	int4 poss = pos + int4(-one, -w, one, w);
+	float inColor = gRWBufferBfloat[pos];// SDT
+	float4 dpn = float4(inColor, inColor, -inColor, -inColor) + float4(-gRWBufferBfloat[poss.x], -gRWBufferBfloat[poss.y], gRWBufferBfloat[poss.z], gRWBufferBfloat[poss.w]);
+	dpn = dpn * 0.5f;
+
+	float dzx =  dpn.x + dpn.z;
+	float dzy =  dpn.y + dpn.w;
+
+	float3 v = float3(0.0f, 1.0f, dzy  * tgd);
+	float3 u = float3(1.0f, 0.0f, dzx * tgd);
+
+	float3 n = cross(u, v);
+	float ln = length(n);
+	float3 li = { light.x, light.y, light.z };//reflected light ray float3 r = li - 2.0f * n*(dot(li,n)) / (ln*ln);float cosNE = dot(r, n) / (ln* length(r));float3 zaxe = { 0,0,-1 };
+	return  dot(n, li) / ln; //cosine 
+}
+
+float med(float a1, float a2, float a3, float a4, float a5, float a6, float a7, float a8, float a9 ) {
+	float a[9] = { a1,a2,a3,a4,a5,a6,a7,a8,a9 };
+	float min = 10000.0f;
+	int ti = 0;
+	for (int mi = 0; mi < 5; mi++)
+	{
+		min = 10000.0f;
+		ti = 0;
+		for (int i = 0; i < 9; i++)
+		{
+			if (a[i] < min)
+			{
+				min = a[i];
+				ti = i;
+			}
+		}
+		a[ti] = 10000;
+	}
+	return min;
+}
+float mean(float a1, float a2, float a3, float a4, float a5, float a6, float a7, float a8, float a9) {
+	return (a1+a2+a3+a4+a5+a6+a7+a8+a9)/9.0f;
+}
+float mean(int pos, int width, StructuredBuffer<float> buffer)
+{
+	float w = width;
+	float h1 = buffer[pos];
+	float h2 = buffer[pos + 1];
+	float h3 = buffer[pos + 1 - w];
+	float h4 = buffer[pos - w];
+	float h5 = buffer[pos - 1 - w];
+	float h6 = buffer[pos - 1];
+	float h7 = buffer[pos - 1 + w];
+	float h8 = buffer[pos + w];
+	float h9 = buffer[pos + 1 + w];
+	return mean(h1, h2, h3, h4, h5, h6, h7, h8, h9);
+}
+float contrast(float l) {
+	return sin(l*3.14f*2.0f)*0.15f + l;
+}
+
+float3 contrast(float3 l) {
+	return float3 (contrast(l.r), contrast(l.g), contrast(l.b));
+}
+
+float acontrast(float l) {
+	return sin(l*3.14f*2.0f)*0.15f + l;
+}
+
+float SDTtoODT(float dt)
+{
+	float odt = -dt;
+	return (odt <= 0.0f) ? 0.0f : odt + 1.0f;
+}
+
+float SDTtoIDT(float dt)
+{
+	return (dt < 0) ? 0 : dt;
+}
+
+////////////////////////////////////////////// Cut dt Map /////////////////////////////////
+[numthreads(32, 32, 1)]
+void CSSepBevelCutIn(int3 dispatchThreadID : SV_DispatchThreadID) 
+{
+	/*
+	Input:
+		StructuredBuffer <float> gInputBufferfloat - dt buffer
+		float fSize - bevelOptions.size
+		int width
+	Output:
+		RWStructuredBuffer<float> gRWBufferAfloat;
+	*/
+	int y = dispatchThreadID.y;
+	int x = dispatchThreadID.x;
+	int w = width;
+	int h = height;
+	if (y < h && x < w) {
+
+		 int pos = y * w + x;
+		 float rad = fSize;
+		 float dtc = cutdt(gInputBufferfloat[pos], rad);
+		 gRWBufferAfloat[pos] = dtc;
+	 }
+}
+
+
+////////////////////////////////////////////// Cut dt Map Smooth /////////////////////////////////
+[numthreads(32, 32, 1)]
+void CSSepBevelCutInSmooth(int3 dispatchThreadID : SV_DispatchThreadID)
+{
+	/*
+	Input:
+		StructuredBuffer <float> gInputBufferfloat - dt buffer
+		float fSize - bevelOptions.size
+		int width
+	Output:
+		RWStructuredBuffer<float> gRWBufferAfloat;
+	*/
+	int y = dispatchThreadID.y;
+	int x = dispatchThreadID.x;
+	int w = width;
+	int h = height;
+	if (y < h && x < w) {
+
+		int pos = y * w + x;
+		float rad = fSize;
+		float dtc = cutdt(-gInputBufferfloat[pos], rad);
+		if (dtc < 0) dtc = 0;
+		gRWBufferAfloat[pos] = -dtc;
+	}
+}
+
+
+[numthreads(32, 32, 1)]
+void CSSepBevelCutOut(int3 dispatchThreadID : SV_DispatchThreadID)
+{
+	/*
+	Input:
+	StructuredBuffer <float> gInputBufferfloat - dt buffer
+	float fSize - bevelOptions.size
+	int width
+	int height
+	bool boolA - inverse input
+	bool inverse - inverse result * (-1)
+	Output:
+	RWStructuredBuffer<float> gRWBufferAfloat;
+	RWTexture2D<float> gOutputDf;
+	*/
+	int y = dispatchThreadID.y;
+	int x = dispatchThreadID.x;
+	float w = width;
+	float h = height;
+	if ((y < h) && (x < w))
+	{
+		int pos = y * w + x;
+		float rad = fSize;
+		float dtc = (boolA) ? cutdt(-gInputBufferfloat[pos], rad) : cutdt(SDTtoIDT(gInputBufferfloat[pos]), rad);
+		gRWBufferAfloat[pos] = (!inverse) ? dtc : -dtc;
+	}
+}
+
+////////////////////////////////////////////// Cosine Map from dt buffer /////////////////////////////////
+[numthreads(32, 32, 1)]
+void CSCosineMap(int3 dispatchThreadID : SV_DispatchThreadID)
+{
+	/*
+	Input:
+		RWStructuredBuffer <float> gRWBufferBfloat - dt buffer;
+		int width
+		int height
+		float4 light - new Vector4(bevelOptions.LightPosition.x, bevelOptions.LightPosition.y, bevelOptions.LightPosition.z, tg25 * depth)
+	Output:
+		RWStructuredBuffer<float> gRWBufferAfloat;
+	*/
+	if (dispatchThreadID.y < height && dispatchThreadID.x < width)
+	{
+		int pos = dispatchThreadID.y * width + dispatchThreadID.x;
+		float c = cosine(pos);
+		gRWBufferAfloat[pos] = (c > 0) ? c : 0.0f;
+	}
+}
+
+// 
+float smooth_cut(float input, float size, float dt)
+{
+	float sd = size / 5.0f;
+	float smoothAt = size - sd;
+	float st = dt - smoothAt;
+	float t = st / sd;
+	float output = (dt < smoothAt) ? input : lerp(input, 0, t);
+	return output;
+}
+
+[numthreads(32, 32, 1)]
+void CSSepBevel_R8(int3 dispatchThreadID : SV_DispatchThreadID)
+{
+	/*
+	Input:
+		Texture2D gInputV - face texture
+		RWStructuredBuffer <float> gRWBufferAfloat - dt buffer
+		float4 light - new Vector4(bevelOptions.LightPosition.x, bevelOptions.LightPosition.y, bevelOptions.LightPosition.z, (float)bevelOptions.size)
+		int width
+		int height
+		bool boolA - smooth cut
+		StructuredBuffer <float> fBInputA - bevel contour;
+		StructuredBuffer <float> fBInputB - dt;
+		float fSize - bevel size for smooth cut
+	Output:
+		gOutputDf - output R8 texture light
+		gOutputVf - output R8 texture shadow
+	*/
+	int w = width;
+	int h = height;
+	int y = dispatchThreadID.y;
+	int x = dispatchThreadID.x;
+	float size = fSize;
+	if (y < h && x < w)
+	{
+		int pos = y * w + x;
+
+		float lighting = gRWBufferAfloat[pos];
+
+		float lightingCap = dot(float3(0, 0, 1), float3 (light.x, light.y, light.z)); // cosine on cap by 
+
+		float light_alpha;
+		float shadow_alpha;
+
+		//  light-------------------------------------------------------------------------
+		if (lighting > 0)
+		{
+			float l = contour_b(fBInputA, lighting);
+			float lc = lightingCap;
+			//light_alpha = (lighting > lightingCap) ? contour_b(fBInputA, (lighting - lightingCap) / (1.0f - lightingCap)) : 0.0f;
+			light_alpha = (l > lc) ? (l - lc) / (1.0f - lc) : 0.0f;
+		}
+		else
+			light_alpha = 0.0f;
+
+		light_alpha = clamp(light_alpha, 0.0f, 1.0f);
+
+		//  shadows-----------------------------------------------------------------------
+		if (lightingCap > 0.0f) //avoid division by zero
+			shadow_alpha = 1.0f - contour_b(fBInputA, (lighting >= 0) ? lighting : 1.0f) / lightingCap;  // shadow alpha
+		else
+			shadow_alpha = 0.0f;
+
+		shadow_alpha = clamp(shadow_alpha, 0.0f, 1.0f);
+
+		gOutputDf[dispatchThreadID.xy] = (!boolA) ? light_alpha : smooth_cut(light_alpha, size, SDTtoODT(fBInputB[pos]));
+		gOutputVf[dispatchThreadID.xy] = (!boolA) ? shadow_alpha : smooth_cut(shadow_alpha, size, SDTtoODT(fBInputB[pos]));
+	}
+}
+
+// ---------------- END  BEVEL -----------------------------------------------------------------
+//
+//
+//
+//
+//
+// ----------------  DISTANCE TRANSFORM -----------------------------------------------------------------
+
+/////////////////////////// separate euclidean distance from <int> buffer //////////////////////// 
+int sepedt(int i, int u, int yw, RWStructuredBuffer<int> g, int mn)
+{
+	//int yw = y * width;
+	int ug = u + yw;
+	int ig = i + yw;
+	if ((u - i) == 0) return mn;
+	else return (u*u - i*i + g[ug] * g[ug] - g[ig] * g[ig]) / (2 * (u - i));
+}
+
+/////////////////////////// separate euclidean distance from <float> buffer //////////////////////// 
+float sepedtaafloat(int i, int u, int y, RWStructuredBuffer<float> g, float mn, int width)
+{
+	int scale = 256;
+	float usc = u * scale;
+	float isc = i * scale;
+
+	int yw = y * width;
+	int ug = u + yw;
+	int ig = i + yw;
+
+	if ((u - i) == 0) return mn;
+
+	else
+	{
+		float r1 = usc*usc - isc*isc + g[ug] * g[ug] - g[ig] * g[ig];
+		float r2 = 2 * (usc - isc);
+		float r3 = ceil(r1 / r2);
+		return r3;
+	}
+}
+
+/////////////////////////// separate manchester distance from <int> buffer //////////////////////// 
+int sepmdt(int i, int u, int y, StructuredBuffer<int> g, int mn, int width)
+{
+	int yw = y * width;
+	int ug = u + yw;
+	int ig = i + yw;
+	if (g[ug] >= g[ig] + u - i) return mn;
+	if (g[ig] > g[ug] + u - i) return -mn;
+	else return  (g[ug] - g[ig] + u + i) / 2;
+}
+
+/////////////////////////// separate chessboard distance from <int> buffer //////////////////////// 
+int sepcdt(int i, int u, int y, StructuredBuffer<int> g, int mn, int width)
+{
+	int yw = y * width;
+	int ug = u + yw;
+	int ig = i + yw;
+	if (g[ig] <= g[ug]) return max(i + g[ug], (i + u) / 2);
+	else return min(u - g[ig], (i + u) / 2);
+}
+
+/////////////////////////// euclidean distance metric from <int> buffer //////////////////////// 
+int fedt(int x, int g_i)
+{
+	return x * x + g_i * g_i;
+}
+
+/////////////////////////// euclidean distance metric from <double> buffer //////////////////////// 
+double fedtaa(double x, double g_i)
+{
+	return x*x + g_i * g_i;
+}
+
+/////////////////////////// euclidean distance metric from <float> buffer //////////////////////// 
+float fedtaafloat(float x, float g_i)
+{
+	return x*x + g_i * g_i;
+}
+
+/////////////////////////// manchester distance metric from <int> buffer //////////////////////// 
+int fmdt(int x, int g_i)
+{
+	return abs(x) + g_i;
+}
+
+/////////////////////////// chessboard distance metric from <int> buffer //////////////////////// 
+int fcdt(int x, int g_i)
+{
+	return max(abs(x), g_i);
+}
+
+double floor8(double x)
+{
+	double scale = 256.0;
+	int r_i = (int)(x / scale);
+	return (double)r_i * scale;
+}
+
+float floor8float(float x)
+{
+	float scale = 256.0f;
+	int r_i = (int)(x / scale);
+	return (float)r_i * scale;
+}
+
+////////////////////////////////////////////// Distance transform First phase (m grpoups along X-axe) From a - channel
+[numthreads(1, 1, 1)]
+void CSDistM(int3 groupID : SV_GroupID)
+{
+	/*
+	Input:
+		int width
+		int height
+		Texture2D gInputV
+	Output:
+		RWStructuredBuffer<int> gRWBufferC;
+	*/
+	int wh = width + height;
+	int x = groupID.x;
+	float ca = gInputV[int2(x, 0)].a;// gInputV - input alpha texture, gRWBufferC - output  array 
+
+	gRWBufferC[x] = (ca == 0) ?  0 : wh;
+
+	// first scan top -> down
+	for (int y = 1; y < height; y++)
+	{
+		int p = x + y*width;
+		ca = gInputV[int2(x, y)].a;
+		gRWBufferC[p] = (ca == 0) ? 0 : 1 + gRWBufferC[p - width];
+	}
+	//second scan down -> top
+	for (int yn = height-2; yn >= 0; yn--)
+	{
+		int p = x + yn*width;
+		if (gRWBufferC[p + width] <  gRWBufferC[p]) gRWBufferC[p] = 1 + gRWBufferC[p+width] ;
+	}
+}
+
+////////////////////////////////////////////// Distance transform First phase (m grpoups along X-axe) From a - channel
+[numthreads(1, 1, 1)]
+void CSDistMInverse(int3 groupID : SV_GroupID)
+{
+	/*
+	Input:
+		int width
+		int height
+		Texture2D gInputV
+	Output:
+		RWStructuredBuffer<int> gRWBufferC;
+	*/
+	int wh = width + height;
+	int x = groupID.x;
+	float ca = 1.0f - gInputV[int2(x, 0)].a;// gInputV - input alpha texture, gRWBufferC - output  array 
+
+	gRWBufferC[x] = (ca == 0) ?  0 : wh;
+
+	// first scan top -> down
+	for (int y = 1; y < height; y++)
+	{
+		int p = x + y * width;
+		ca = 1.0f - gInputV[int2(x, y)].a;
+		gRWBufferC[p] = (ca == 0) ? 0 : 1 + gRWBufferC[p - width];
+	}
+	//second scan down -> top
+	for (int yn = height - 2; yn >= 0; yn--)
+	{
+		int p = x + yn * width;
+		if (gRWBufferC[p + width] <  gRWBufferC[p]) gRWBufferC[p] = 1 + gRWBufferC[p + width];
+	}
+}
+
+////////////////////////////////////////////// Distance transform First phase (m grpoups along X-axe) from R8 texture r-channel
+[numthreads(1, 1, 1)]
+void CSDistM_R8(int3 groupID : SV_GroupID, int3 groupThreadID : SV_GroupThreadID, int3 dispatchThreadID : SV_DispatchThreadID)
+{
+	/*
+	Input:
+		int width
+		int height
+		Texture2D gInputV
+		bool inverse - inverseInput
+
+	Output:
+		RWStructuredBuffer<int> gRWBufferA;
+	*/
+	int wh = width + height;
+	int x = groupID.x;
+	float ca = (inverse)? 1.0f-gInputV[int2(x, 0)].r : gInputV[int2(x, 0)].r;
+	if ( ca== 0) gRWBufferA[x] = 0; // gInputV - input alpha texture, gRWBufferA - output  array 
+	else gRWBufferA[x] = wh;
+
+	// first scan top -> down
+	for (int y = 1; y < height; y++)
+	{
+		int p = x + y*width;
+		ca =(inverse)? 1.0f - gInputV[int2(x, y)].r : gInputV[int2(x, y)].r;
+		if ( ca== 0) gRWBufferA[p] = 0;
+		else  gRWBufferA[p] = 1 + gRWBufferA[p - width];
+	}
+	//second scan down -> top
+	for (int yn = height - 2; yn >= 0; yn--)
+	{
+		int p = x + yn*width;
+		if (gRWBufferA[p + width] <  gRWBufferA[p]) gRWBufferA[p] = 1 + gRWBufferA[p + width];
+	}
+}
+
+
+////////////////////////////////////////////// Distance transform AA First phase (m grpoups along X-axe) from R8 input to float buffer
+[numthreads(1, 1, 1)]
+void CSDistMAAFloat_R8(int3 groupID : SV_GroupID)
+{
+	/*
+	Input:
+		int width
+		int height
+		Texture2D gInputV
+		bool inverse - inverseInput
+	Output:
+		RWStructuredBuffer<float> gRWBufferCfloat;
+	*/
+	float scale = 256.0f;
+	float infinite = (width + height) * scale;
+	int x = groupID.x;
+	int p = x;
+
+	float ca =(inverse) ? 1.0f - gInputV[int2(x, 0)].r : gInputV[int2(x, 0)].r;
+
+	if (ca == 0)
+	{
+		gRWBufferCfloat[p] = 0.0f; // gInputV - input r8 texture, gRWBufferCfloat - output  array 
+	}
+	else if (ca == 1)
+	{
+		gRWBufferCfloat[p] = infinite;
+	}
+	else
+	{
+		gRWBufferCfloat[p] = ca * 255.0f;
+	}
+
+	// first scan bottom -> top
+	for (int y = 1; y < height; y++)
+	{
+		p = x + y*width;
+		ca =(inverse)? 1.0f - gInputV[int2(x, y)].r : gInputV[int2(x, y)].r;
+
+		if (ca == 0)
+		{
+			gRWBufferCfloat[p] = 0.0f;
+		}
+		else
+		{
+			if (ca == 1)
+			{
+				gRWBufferCfloat[p] = scale + gRWBufferCfloat[p - width];
+			}
+			else
+			{
+				gRWBufferCfloat[p] = ca * 255.0f;
+			}
+		}
+	}
+
+	//second scan top -> bottom
+	for (int yn = height - 2; yn >= 0; yn--)
+	{
+		p = x + yn*width;
+		float d =scale + gRWBufferAfloat[p + width];
+		if (gRWBufferAfloat[p] > d)
+		{
+			 gRWBufferAfloat[p] = d;
+		}
+	}
+}
+
+////////////////////////////////////////////// Distance transform AA First phase (m grpoups along X-axe) from RGBA a-channel input to float buffer
+[numthreads(1, 1, 1)]
+void CSDistMAAFloat(int3 groupID : SV_GroupID)
+{
+	/*
+	Input:
+		int width
+		int height
+		Texture2D gInputV
+
+	Output:
+		RWStructuredBuffer<float> gRWBufferCfloat;
+	*/
+	float scale = 256.0f;
+	float infinite = (width + height) * scale;
+	int x = groupID.x;
+	int p = x;
+
+	float ca = gInputV[int2(x, 0)].a;//float ca = clamp(gInputV[int2(x, 0)].a, 0 , 1);
+
+	if (ca == 0)
+	{
+		gRWBufferCfloat[p] = 0.0f; // gInputV - input r8 texture, gRWBufferCfloat - output  array 
+	}
+	else if (ca == 1)
+	{
+		gRWBufferCfloat[p] = infinite;
+	}
+	else
+	{
+		gRWBufferCfloat[p] = ca * 255.0f;
+	}
+
+	// first scan bottom -> top
+	for (int y = 1; y < height; y++)
+	{
+		p = x + y*width;
+
+		ca = gInputV[int2(x, y)].a; //ca = clamp(gInputV[int2(x, y)].a, 0, 1);
+
+		if (ca == 0)
+		{
+			gRWBufferCfloat[p] = 0.0f;
+		}
+		else
+		{
+			if (ca == 1)
+			{
+				gRWBufferCfloat[p] = scale + gRWBufferCfloat[p - width];
+			}
+			else
+			{
+				gRWBufferCfloat[p] = ca * 255.0f;
+			}
+		}
+	}
+
+	//second scan top -> bottom
+	float d;
+	for (int yn = height - 2; yn >= 0; yn--)
+	{
+		p = x + yn*width;
+		d = scale + gRWBufferCfloat[p + width];
+		if (gRWBufferCfloat[p] > d)
+		{
+			gRWBufferCfloat[p] = d;
+		}
+	}
+}
+
+////////////////////////////////////////////// Distance transform AA First phase (m grpoups along X-axe) from RGBA a-channel input to float buffer
+[numthreads(1, 1, 1)]
+void CSDistMAAFloatInverse(int3 groupID : SV_GroupID)
+{
+	/*
+	Input:
+	int width
+	int height
+	Texture2D gInputV
+
+	Output:
+	RWStructuredBuffer<float> gRWBufferCfloat;
+	*/
+	float scale = 256.0f;
+	float infinite = (width + height) * scale;
+	int x = groupID.x;
+	int p = x;
+
+	float ca = gInputV[int2(x, 0)].a; //float ca = clamp(gInputV[int2(x, 0)].a, 0, 1);
+	ca = 1.0f - ca;
+
+	if (ca == 0)
+	{
+		gRWBufferCfloat[p] = 0.0f; // gInputV - input r8 texture, gRWBufferCfloat - output  array 
+	}
+	else if (ca == 1)
+	{
+		gRWBufferCfloat[p] = infinite;
+	}
+	else
+	{
+		gRWBufferCfloat[p] = ca * 255.0f;
+	}
+
+	// first scan bottom -> top
+	for (int y = 1; y < height; y++)
+	{
+		p = x + y * width;
+
+		ca = gInputV[int2(x, y)].a; //ca = clamp(gInputV[int2(x, y)].a, 0, 1);
+		ca = 1.0f - ca;
+
+		if (ca == 0)
+		{
+			gRWBufferCfloat[p] = 0.0f;
+		}
+		else
+		{
+			if (ca == 1)
+			{
+				gRWBufferCfloat[p] = scale + gRWBufferCfloat[p - width];
+			}
+			else
+			{
+				gRWBufferCfloat[p] = ca * 255.0f;
+			}
+		}
+	}
+
+	//second scan top -> bottom
+	float d;
+	for (int yn = height - 2; yn >= 0; yn--)
+	{
+		p = x + yn * width;
+		d = scale + gRWBufferCfloat[p + width];
+		if (gRWBufferCfloat[p] > d)
+		{
+			gRWBufferCfloat[p] = d;
+		}
+	}
+}
+
+////////////////////////////////////////////// Distance transform Second phase (n grpoups along Y-axe) - eucledian distance
+[numthreads(1, 1, 1)]
+void CSDistME(int3 groupID : SV_GroupID, int3 groupThreadID : SV_GroupThreadID, int3 dispatchThreadID : SV_DispatchThreadID)
+{
+	/*
+	Input:
+		int width
+		int height
+		StructuredBuffer <int> gRWBufferC - G - array from first phase
+	Output:
+		RWStructuredBuffer<int> gRWBufferA - array t [n]
+		RWStructuredBuffer<int> gRWBufferB - array s [m]
+		RWStructuredBuffer<float> fBOutA;
+	*/
+
+	int wh = width + height;
+	int y = groupID.y;
+	int yp = y*width;
+
+    int q = 0;
+	int w = 0;
+	gRWBufferA[yp] = 0;//t
+	gRWBufferB[yp] = 0;//s
+    
+	//scan 3
+    for (int u = 0; u < width; u++)  
+    {
+		int t_q = gRWBufferA[q + yp];	//t
+		int s_q = gRWBufferB[q + yp];	//s
+		while (q >= 0 && fedt(t_q - s_q, gRWBufferC[s_q + yp]) > fedt(t_q - u, gRWBufferC[u + yp]))
+        {
+			q = q - 1;
+			t_q = gRWBufferA[q + yp]; //t
+			s_q = gRWBufferB[q + yp];  //s
+        }
+        if (q < 0)
+        {
+	        q = 0;
+            gRWBufferB[yp] = u; // s
+        }
+        else
+        {
+			w = 1 + sepedt(gRWBufferB[q+yp], u, yp, gRWBufferC, wh);
+            if (w < width)
+            {
+				q = q + 1;
+                gRWBufferB[q+yp] = u; // s
+                gRWBufferA[q+yp] = w; // t
+			}
+		}
+	}//end scan 3
+    
+	//scan 4
+	int t_qt = 0;
+	int s_qt = 0;
+	int dt = 0;
+	float pdt = 0;
+	for (int un = width - 1; un >= 0; un--)
+	{
+		t_qt = gRWBufferA[q + yp];	//t
+		s_qt = gRWBufferB[q + yp];  //s
+
+		dt = fedt(un - s_qt, gRWBufferC[s_qt + yp]);
+		pdt = sqrt((float)dt);
+		fBOutA[un + yp] = pdt;
+        if (un == t_qt)
+        {
+		     q = q - 1;
+        }
+	}
+}
+
+////////////////////////////////////////////// Distance transform Second phase (n grpoups along Y-axe) - eucledian distance
+[numthreads(1, 1, 1)]
+void CSDistMESigned(int3 groupID : SV_GroupID, int3 groupThreadID : SV_GroupThreadID, int3 dispatchThreadID : SV_DispatchThreadID)
+{
+	/*
+	Input:
+	int width
+	int height
+	StructuredBuffer <int> gRWBufferC - G - array from first phase
+	Output:
+	RWStructuredBuffer<int> gRWBufferA - array t [n]
+	RWStructuredBuffer<int> gRWBufferB - array s [m]
+	RWStructuredBuffer<float> fBOutA;
+	*/
+
+	int wh = width + height;
+	int y = groupID.y;
+	int yp = y * width;
+
+	int q = 0;
+	int w = 0;
+	gRWBufferA[yp] = 0;//t
+	gRWBufferB[yp] = 0;//s
+
+					   //scan 3
+	for (int u = 0; u < width; u++)
+	{
+		int t_q = gRWBufferA[q + yp];	//t
+		int s_q = gRWBufferB[q + yp];	//s
+		while (q >= 0 && fedt(t_q - s_q, gRWBufferC[s_q + yp]) > fedt(t_q - u, gRWBufferC[u + yp]))
+		{
+			q = q - 1;
+			t_q = gRWBufferA[q + yp]; //t
+			s_q = gRWBufferB[q + yp];  //s
+		}
+		if (q < 0)
+		{
+			q = 0;
+			gRWBufferB[yp] = u; // s
+		}
+		else
+		{
+			w = 1 + sepedt(gRWBufferB[q + yp], u, yp, gRWBufferC, wh);
+			if (w < width)
+			{
+				q = q + 1;
+				gRWBufferB[q + yp] = u; // s
+				gRWBufferA[q + yp] = w; // t
+			}
+		}
+	}//end scan 3
+
+	 //scan 4
+	int t_qt = 0;
+	int s_qt = 0;
+	int dt = 0;
+	float pdt = 0;
+	for (int un = width - 1; un >= 0; un--)
+	{
+		t_qt = gRWBufferA[q + yp];	//t
+		s_qt = gRWBufferB[q + yp];  //s
+
+		dt = fedt(un - s_qt, gRWBufferC[s_qt + yp]);
+		pdt = sqrt((float)dt);
+		if (pdt >= 1.0f)
+			fBOutA[un + yp] = -(pdt - 1.0f);
+		if (un == t_qt)
+		{
+			q = q - 1;
+		}
+	}
+}
+
+////////////////////////////////////////////// Distance transform Second phase (n grpoups along Y-axe) - manchester distance
+[numthreads(1, 1, 1)]
+void CSDistMM(int3 groupID : SV_GroupID, int3 groupThreadID : SV_GroupThreadID, int3 dispatchThreadID : SV_DispatchThreadID)
+{
+	/*
+	Input:
+		int width
+		int height
+		StructuredBuffer <int> gInputBuffer - G - array from first phase
+		bool inverse - inverseOutput
+	Output:
+		RWStructuredBuffer<int> gRWBufferA - array t [n]
+		RWStructuredBuffer<int> gRWBufferB - array s [m]
+		RWStructuredBuffer<float> fBOutA;
+	*/
+
+	int wh = width + height;
+	int y = groupID.y;
+	int yp = y*width;
+	int ypt = yp;// y*height;
+
+    int q = 0;
+	int w = 0;
+	gRWBufferA[ypt] = 0;//t
+	gRWBufferB[yp] = 0;//s
+
+    //scan 3
+    for (int u = 0; u < width; u++)  
+    {
+		int t_q = gRWBufferA[q + ypt]; //t
+		int s_q = gRWBufferB[q + yp];  //s
+
+		while (q >= 0 && fmdt(t_q - s_q, gInputBuffer[s_q + yp]) > fmdt(t_q - u, gInputBuffer[u + yp]))
+        {
+			q = q - 1;
+			t_q = gRWBufferA[q + ypt]; //t
+			s_q = gRWBufferB[q + yp];  //s
+        }
+        if (q < 0)
+        {
+	        q = 0;
+            gRWBufferB[yp] = u;
+        }
+        else
+        {
+			w = 1 + sepmdt(gRWBufferB[q+yp], u, y, gInputBuffer, wh, width);
+            if (w < width)
+            {
+				q = q + 1;
+                gRWBufferB[q+yp] = u; //s
+                gRWBufferA[q+ypt] = w; //t
+			}
+	}
+	}//end scan 3
+
+
+	//scan 4
+	for (int un = width - 1; un >= 0; un--)
+	{
+		int t_q = gRWBufferA[q + ypt]; //t
+		int s_q = gRWBufferB[q + yp];  //s
+
+		int col = fmdt(un - s_q, gInputBuffer[s_q + yp]);
+		fBOutA[un+yp] = (!inverse) ? (float)col :  - (float)col;
+        if (un == t_q)
+        {
+		     q = q - 1;
+        }
+	}
+}
+
+////////////////////////////////////////////// Distance transform Second phase (n grpoups along Y-axe) - chessboard distance
+[numthreads(1, 1, 1)]
+void CSDistMC(int3 groupID : SV_GroupID, int3 groupThreadID : SV_GroupThreadID, int3 dispatchThreadID : SV_DispatchThreadID)
+{
+	/*
+	Input:
+		int width
+		int height
+		StructuredBuffer <int> gInputBuffer - G - array from first phase
+		bool inverse - inverseOutput
+	Output:
+		RWStructuredBuffer<int> gRWBufferA - array t [n]
+		RWStructuredBuffer<int> gRWBufferB - array s [m]
+		RWStructuredBuffer<float> fBOutA;
+	*/
+	int wh = width + height;
+	int y = groupID.y;
+	int yp = y*width;
+	int ypt = yp; //y*height;
+
+	int q = 0;
+	int w = 0;
+	gRWBufferA[ypt] = 0;//t
+	gRWBufferB[yp] = 0;//s
+
+	//scan 3
+	for (int u = 0; u < width; u++)
+	{
+		int t_q = gRWBufferA[q + ypt]; //t
+		int s_q = gRWBufferB[q + yp];  //s
+
+		while (q >= 0 && fcdt(t_q - s_q, gInputBuffer[s_q + yp]) > fcdt(t_q - u, gInputBuffer[u + yp]))
+		{
+			q = q - 1;
+			t_q = gRWBufferA[q + ypt]; //t
+			s_q = gRWBufferB[q + yp];  //s
+		}
+		if (q < 0)
+		{
+			q = 0;
+			gRWBufferB[yp] = u;
+		}
+		else
+		{
+			w = 1 + sepcdt(gRWBufferB[q + yp], u, y, gInputBuffer, wh, width);
+			if (w < width)
+			{
+				q = q + 1;
+				gRWBufferB[q + yp] = u; //s
+				gRWBufferA[q + ypt] = w; //t
+			}
+		}
+	}//end scan 3
+
+
+	 //scan 4
+	for (int un = width - 1; un >= 0; un--)
+	{
+		int t_q = gRWBufferA[q + ypt]; //t
+		int s_q = gRWBufferB[q + yp];  //s
+
+		int col = fcdt(un - s_q, gInputBuffer[s_q + yp]);
+		fBOutA[un + yp] = (!inverse) ? (float)col :  - (float)col;
+		if (un == t_q)
+		{
+			q = q - 1;
+		}
+	}
+}
+
+
+////////////////////////////////////////////// Distance transform Second phase (n grpoups along Y-axe) -> eucledian scaled distance buffer
+[numthreads(1, 1, 1)]
+void CSDistMEAAFloat(int3 groupID : SV_GroupID)
+{
+	/*
+	Input:
+		int width
+		int height
+		StructuredBuffer <float> gRWBufferCfloat - G - array from first phase
+	Output:
+		RWStructuredBuffer<float> gRWBufferAfloat - array t [m]
+		RWStructuredBuffer<float> gRWBufferBfloat - array s [n]
+		RWStructuredBuffer<float> fBOutA - EDTAA buffer
+	*/
+
+	float scale = 256.0f;
+	float infinite = (width + height) * scale;
+	int y = groupID.y;
+	int yp = y*width;
+	int ypt = yp; //y*height;
+
+	int q = 0;
+	int w = 0;
+
+	gRWBufferAfloat[0 + ypt] = 0.0f;	//t
+	gRWBufferBfloat[0 + yp] = 0.0f;		//s
+	float t_q = 0;
+	float s_q = 0;
+
+	for (int u = 0; u < width; u++)//scan 3
+	{
+		 t_q = gRWBufferAfloat[q + ypt];
+		 s_q = gRWBufferBfloat[q + yp];
+
+		while (q >= 0 && fedtaafloat(floor8float(t_q) - scale * s_q, gRWBufferCfloat[s_q + yp]) > fedtaafloat(floor8float(t_q) - scale * (float)u, gRWBufferCfloat[u + yp]))
+		{
+			q = q - 1;
+			t_q = gRWBufferAfloat[q + ypt]; //t
+			s_q = gRWBufferBfloat[q + yp]; // s
+		}
+
+		if (q < 0)
+		{
+			q = 0;
+			gRWBufferBfloat[0 + yp] = u; // s
+		}
+		else
+		{
+			w = scale + sepedtaafloat((int)gRWBufferBfloat[q + yp], u, y, gRWBufferCfloat, infinite, width); // s
+			if (w < scale *(float)width)
+			{
+				q = q + 1;
+				gRWBufferBfloat[q + yp] = u; // s
+				gRWBufferAfloat[q + ypt] = w; // t
+			}
+		}
+	}//end scan 3
+
+	int s_qt = 0;
+	int t_qt = 0;
+	float dt = 0;
+	float dft = 0;
+	float pdt = 0;
+	for (int un = width - 1; un >= 0; un--)//scan 4
+	{
+		s_qt = gRWBufferBfloat[q + yp]; //s
+		t_qt = gRWBufferAfloat[q + ypt]; //t
+		dt = fedtaafloat(scale * (un - s_qt), gRWBufferCfloat[s_qt + yp]);
+		dft = dt / 65536.0f;
+		pdt = sqrt(dft);
+		fBOutA[un + yp] = pdt;
+		if (un == t_qt / 256)
+		{
+			q = q - 1;
+		}
+	}
+}
+
+////////////////////////////////////////////// Distance transform Second phase (n grpoups along Y-axe) -> eucledian scaled distance buffer
+[numthreads(1, 1, 1)]
+void CSDistMEAAFloatSigned(int3 groupID : SV_GroupID)
+{
+	/*
+	Input:
+	int width
+	int height
+	StructuredBuffer <float> gRWBufferCfloat - G - array from first phase
+	Output:
+	RWStructuredBuffer<float> gRWBufferAfloat - array t [m]
+	RWStructuredBuffer<float> gRWBufferBfloat - array s [n]
+	RWStructuredBuffer<float> fBOutA - EDTAA buffer
+	*/
+
+	float scale = 256.0f;
+	float infinite = (width + height) * scale;
+	int y = groupID.y;
+	int yp = y * width;
+	int ypt = yp; //y*height;
+
+	int q = 0;
+	int w = 0;
+
+	gRWBufferAfloat[0 + ypt] = 0.0f;	//t
+	gRWBufferBfloat[0 + yp] = 0.0f;		//s
+	float t_q = 0;
+	float s_q = 0;
+
+	for (int u = 0; u < width; u++)//scan 3
+	{
+		t_q = gRWBufferAfloat[q + ypt];
+		s_q = gRWBufferBfloat[q + yp];
+
+		while (q >= 0 && fedtaafloat(floor8float(t_q) - scale * s_q, gRWBufferCfloat[s_q + yp]) > fedtaafloat(floor8float(t_q) - scale * (float)u, gRWBufferCfloat[u + yp]))
+		{
+			q = q - 1;
+			t_q = gRWBufferAfloat[q + ypt]; //t
+			s_q = gRWBufferBfloat[q + yp]; // s
+		}
+
+		if (q < 0)
+		{
+			q = 0;
+			gRWBufferBfloat[0 + yp] = u; // s
+		}
+		else
+		{
+			w = scale + sepedtaafloat((int)gRWBufferBfloat[q + yp], u, y, gRWBufferCfloat, infinite, width); // s
+			if (w < scale *(float)width)
+			{
+				q = q + 1;
+				gRWBufferBfloat[q + yp] = u; // s
+				gRWBufferAfloat[q + ypt] = w; // t
+			}
+		}
+	}//end scan 3
+
+	int s_qt = 0;
+	int t_qt = 0;
+	float dt = 0;
+	float dft = 0;
+	float pdt = 0;
+	for (int un = width - 1; un >= 0; un--)//scan 4
+	{
+		s_qt = gRWBufferBfloat[q + yp]; //s
+		t_qt = gRWBufferAfloat[q + ypt]; //t
+		dt = fedtaafloat(scale * (un - s_qt), gRWBufferCfloat[s_qt + yp]);
+		dft = dt / 65536.0f;
+		pdt = sqrt(dft);
+		if (pdt >= 1.0f)
+			fBOutA[un + yp] = -(pdt - 1.0f);
+		if (un == t_qt / 256)
+		{
+			q = q - 1;
+		}
+	}
+}
+
+// ---------------- END DISTANCE TRANSFORM -----------------------------------------------------------------
+//
+//
+//
+//
+//
+// ----------------  DISTANCE BUFFER TO STROKE -----------------------------------------------------------------
+
+void  stroker(int i, int y, float d) // out data to texture gOutputV
+{
+	//create Stroke for Radius
+	float radius = ext;
+	float alpha;
+	if (d <= 0 || d >= radius + 1.0f)
+	{
+		alpha = 0.0f;
+	}
+	else if (d < radius) // from r to 0 
+	{
+		alpha = 1.0f;
+	}
+	else
+	{
+		float distance = d - radius;
+		alpha = 255.0f - (int)(255.0f * distance + 0.5f);
+		alpha = alpha / 255.0f;
+	}
+	gOutputV[int2(i, y)] = alpha;
+}
+
+void  stroker_r8(int i, int y, float d) // out data to texture gOutputVf
+{
+	//create Stroke for Radius
+	float radius = ext;
+	float alpha;
+
+	if (d <= 0 || d >= radius + 1.0f)
+	{
+		alpha = 0.0f;
+	}
+	else if (d < radius) // from r to 0 
+	{
+		alpha = 1.0f;
+	}
+	else
+	{
+		float distance = d - radius;
+		alpha = 1.0f - distance;
+	}
+	gOutputVf[int2(i, y)] =  alpha;
+}
+
+////////////////////////////////////////////// Create Stroke using using distance buffer to RGBA texture
+[numthreads(32, 32, 1)]
+void CSDistBufferToStroke(int3 groupID : SV_GroupID, int3 groupThreadID : SV_GroupThreadID, int3 dispatchThreadID : SV_DispatchThreadID)
+{
+	/*
+	Input:
+		gInputBufferfloat;  -  eucledian squared scaled distance buffer
+		int width;
+		int height;
+		boolA - true - inside (false - outside)
+	Output: 
+		gOutputV - output texture RGBA
+	*/
+	int y = dispatchThreadID.y;
+	int x = dispatchThreadID.x;
+	int w = width;
+	int h = height;
+	if (y < h && x < w)
+	{
+		int pos = y* width + x;
+
+		float d = gInputBufferfloat[pos];
+		if (boolA) // inside
+		{
+			d = (d < 0) ? 0 : d;
+		}
+		else // outside
+		{
+			d = -(d - 1.0f);
+			d = (d < 0) ? 0 : d;
+		}
+		stroker(x, y, d);
+	}
+}
+
+////////////////////////////////////////////// Create Stroke using using distance buffer to R8 texture
+[numthreads(32, 32, 1)]
+void CSDistBufferToStroke_R8(int3 groupID : SV_GroupID, int3 groupThreadID : SV_GroupThreadID, int3 dispatchThreadID : SV_DispatchThreadID)
+{
+	/*
+	Input:
+		gInputBufferfloat;  -  eucledian  distance buffer
+		int width;
+		int height;
+		boolA - true - inside (false - outside)
+	Output:
+		gOutputVf - output texture R8
+	*/
+	int y = dispatchThreadID.y;
+	int x = dispatchThreadID.x;
+	int w = width;
+	int h = height;
+	if (y < h && x < w)
+	{
+		int pos = y* width + x;
+
+		float d = gInputBufferfloat[pos];
+		if (boolA) // inside
+		{
+			d = (d < 0) ? 0 : d;
+		}
+		else // outside
+		{
+			d = -(d - 1.0f);
+			d = (d < 0) ? 0 : d;
+		}
+		stroker_r8(x, y, d);
+	}
+}
+
+// ---------------- END DISTANCE BUFFER TO STROKE -----------------------------------------------------------------
+//
+//
+//
+//
+//
+// ----------------  DISTANCE BUFFER TO OUTER GLOW -----------------------------------------------------------------
+
+//create Outer Glow Prec for size  - in ext, and out data to texture  - RWTexture2D<float> gOutputVf;
+void  outerglowprec_r8(int x, int y, float d)
+{
+	float rad = ext + 0.5f;
+	float s = spread;
+
+	float s1 = (s >= 0.5f) ? (s - 0.5f) *2.0f*rad : 0.5f * rad* s * 2.0f;
+
+	if (d > rad)
+	{
+		gOutputVf[int2(x, y)] = 0.0f;
+	}
+	else
+	{
+		float f = (s >= 0.5f) ? d / (s1 - rad) + rad / (rad - s1) : (0.5f * rad + s1)*(1.0f - d / rad) / rad;
+		gOutputVf[int2(x, y)] = clamp(f, 0.0f, 1.0f);
+	}
+}
+
+//create Outer Glow for size  - in ext, and out data to texture  - RWTexture2D<float> gOutputVf;
+void  outerglowsoft_r8(int x, int y, float d)
+{
+	float radius = ext;
+	float alpha = 0.0f;
+
+	if (d <= radius)
+	{
+		alpha = 1.0f;
+	}
+	else if (d < radius + 1)
+	{
+		float distance = d - radius;
+		alpha = 1.0f - distance;
+	}
+	else
+	{
+		alpha = 0.0f;
+	}
+	gOutputVf[int2(x, y)] = clamp(alpha, 0.0f, 1.0f) ;
+}
+
+
+////////////////////////////////////////////// Create Outer Glow Precise using distance buffer
+[numthreads(32, 32, 1)]
+void CSDistBufferToOuterGlowPrec_R8(int3 dispatchThreadID : SV_DispatchThreadID)
+{
+	/*
+	Input:
+		StructuredBuffer <float> gInputBufferfloat  -  eucledian float distance buffer
+		int ext - glow size
+		int width - texture width
+		int height - texture height
+		float spread - mask
+	Output:
+		RWTexture2D<float> gOutputVf - output texture R8
+	*/
+
+	int w = width;
+	int h = height;
+	int y = dispatchThreadID.y;
+	int x = dispatchThreadID.x;
+
+	if (y < h && x < w)
+	{
+		int pos = y * w + x;
+		float d = max(0, -(gInputBufferfloat[pos] - 1.0f)); //float d = gInputBufferfloat[pos];d = (d < 0) ? 0 : d;
+		outerglowprec_r8(x, y, d);
+	}
+}
+
+////////////////////////////////////////////// Create Outer Glow Softer using distance buffer
+[numthreads(32, 32, 1)]
+void CSDistBufferToOuterGlowSoft_R8(int3 dispatchThreadID : SV_DispatchThreadID)
+{
+	/*
+	Input:
+		StructuredBuffer <float> gInputBuffer  -   distance buffer
+		int ext - glow size
+		int width - texture width
+	Output:
+		RWTexture2D<float> gOutputVf - output texture
+	*/
+
+	int y = dispatchThreadID.y;
+	int x = dispatchThreadID.x;
+	int w = width;
+	int h = height;
+
+	if (y < h && x < w)
+	{
+		int pos = y * w + x;
+		float d = max(0, -(gInputBufferfloat[pos] - 1.0f));	//float d = gInputBufferfloat[pos]; d = (d < 0) ? 0 : d;
+		outerglowsoft_r8(x, y, d);
+	}
+}
+
+// ---------------- END DISTANCE BUFFER TO OUTER GLOW -----------------------------------------------------------------
+//
+//
+//
+//
+//
+// ----------------  DISTANCE BUFFER TO INNER GLOW -----------------------------------------------------------------
+
+//create Outer Glow Prec for size  - in ext, and out data to texture  - RWTexture2D<float> gOutputVf;
+void  innerglowprec_r8(int x, int y, float d)
+{
+	float rad = ext + 0.5f;
+	float s = spread;
+
+	float s1 = (s >= 0.5f) ? (s - 0.5f) *2.0f*rad : 0.5f * rad* s * 2.0f;
+
+	if (d > rad || d == 0.0f)
+	{
+		gOutputVf[int2(x, y)] = 0.0f;
+	}
+	else 
+	{
+		float f = (s >= 0.5f) ? d / (s1 - rad) + rad / (rad - s1) : (0.5f * rad + s1)*(1.0f - d / rad) / rad;
+		gOutputVf[int2(x, y)] = clamp(f, 0.0f, 1.0f);
+	}
+
+}
+
+void innerglowpreccenter_r8(int x, int y, float d)
+{
+	float rad = ext + 0.5f;
+	float s = spread;
+
+	float s1 = (rad-0.5f) * s;
+	float k = 1.0f/(rad-s1);
+	float b = 1.0f - k*rad;
+	float f = (k*d + b);
+	gOutputVf[int2(x, y)] = clamp(f, 0.0f, 1.0f);
+}
+////////////////////////////////////////////// Create Inner Glow Precise using distance buffer
+
+//create Outer Glow for size  - in ext, and out data to texture  - RWTexture2D<float> gOutputVf;
+void  innerglowsoft_r8(int x, int y, float d)
+{
+	float radius = ext;
+	float alpha = 0.0f;
+
+	if (d <= radius)
+	{
+		alpha = 1.0f;
+	}
+	else if (d < radius + 1)
+	{
+		float distance = d - radius;
+		alpha = 1.0f - distance;
+	}
+	else
+	{
+		alpha = 0.0f;
+	}
+	gOutputVf[int2(x, y)] = alpha;
+}
+
+//create Outer Glow for size  - in ext, and out data to texture  - RWTexture2D<float> gOutputVf;
+void  innerglowsoftcenter_r8(int x, int y, float d)
+{
+	float radius = ext;
+	float alpha = 0.0f;
+
+	if (d <= radius)
+	{
+		alpha = 0.0f;
+	}
+	else if (d < radius + 1)
+	{
+		float distance = d - radius;
+		alpha =  distance;
+	}
+	else
+	{
+		alpha = 1.0f;
+	}
+	gOutputVf[int2(x, y)] = alpha;
+}
+
+[numthreads(32, 32, 1)]
+void CSDistBufferToInnerGlowPrec_R8(int3 dispatchThreadID : SV_DispatchThreadID)
+{
+	/*
+	Input:
+		StructuredBuffer <float> gInputBufferfloat  -  eucledian float distance buffer
+		int ext - glow size
+		int width - texture width
+		float spread - 
+		bool boolA - from Outer(true) , from center(false)
+	Output:
+		RWTexture2D<float> gOutputVf - output texture R8
+	*/
+	int w = width;
+	int h = height;
+	int y = dispatchThreadID.y;
+	int x = dispatchThreadID.x;
+	if (y < h && x < w)
+	{
+		int pos = y * w + x;
+		float d = gInputBufferfloat[pos];
+		d = (d < 0) ? 0 : d;
+		if (boolA)
+		{
+			innerglowprec_r8(x, y, d);
+		}
+		else
+		{ 
+			innerglowpreccenter_r8(x, y, d);
+		}
+	}
+}
+
+
+////////////////////////////////////////////// Create Inner Glow Softer using distance buffer
+[numthreads(32, 32, 1)]
+void CSDistBufferToInnerGlowSoft_R8( int3 dispatchThreadID : SV_DispatchThreadID)
+{
+	/*
+	Input:
+		StructuredBuffer <float> gInputBuffer  -   distance buffer
+		int ext - glow size
+		int width - texture width
+		bool boolA - from Outer(true) , from center(false)
+
+	Output:
+		RWTexture2D<float> gOutputVf - output texture
+	*/
+
+	int w = width;
+	int h = height;
+	int y = dispatchThreadID.y;
+	int x = dispatchThreadID.x;;
+
+	if (y < h && x < w)
+	{
+		int pos = y * w + x;
+		float d = gInputBufferfloat[pos];
+		d = (d < 0) ? 0 : d;
+		if (boolA)
+		{
+			innerglowsoft_r8(x, y, d);// to R8
+		}
+		else
+		{
+			innerglowsoftcenter_r8(x, y, d);// to R8
+		}
+	}
+}
+
+// ---------------- END DISTANCE BUFFER TO INNER GLOW -----------------------------------------------------------------
+//
+//
+//
+//
+//
+
+
+// 
+//
+//
+//
+//
+//
+// ----------------  Normalize -----------------------------------------------------------------
+
+////////////////////////////////////////////// normalize input array first pass - get only one max , min values from each row  -----------------------------------------------------------------
+[numthreads(1, 1, 1)]
+void NormalizeF(int3 dispatchThreadID : SV_DispatchThreadID)
+{
+	/*
+	Input:
+		fBInputA - input  array float not normalized
+		int width
+		int height
+	Output:
+		fBOutA - output array with max sizes in rows
+	*/
+
+	float maxh = -100000000.0f;
+	float minh = 100000000.0f;
+	for (int i = 0; i < width; i++)
+	{
+		float c = fBInputA[dispatchThreadID.y * width + i];
+		maxh = (c > maxh) ? c : maxh;
+		minh = (c < minh) ? c : minh;
+	}
+	fBOutA[dispatchThreadID.y] = maxh;
+	fBOutA[dispatchThreadID.y + height] = minh;
+}
+
+////////////////////////////////////////////// normalize input array first pass - get only one max , min values from each row, cut negative  -----------------------------------------------------------------
+[numthreads(1, 1, 1)]
+void NormalizeFCN(int3 dispatchThreadID : SV_DispatchThreadID)
+{
+	/*
+	Input:
+		fBInputA - input  array float not normalized
+		int width
+		int height
+	Output:
+		fBOutA - output array with max sizes in rows
+	*/
+
+	float maxh = -100000000.0f;
+	float minh = 100000000.0f;
+	for (int i = 0; i < width; i++)
+	{
+		float c = fBInputA[dispatchThreadID.y * width + i];
+		c = max(c, 0);
+		maxh = (c > maxh) ? c : maxh;
+		minh = (c < minh) ? c : minh;
+	}
+	fBOutA[dispatchThreadID.y] = maxh;
+	fBOutA[dispatchThreadID.y + height] = minh;
+}
+
+
+////////////////////////////////////////////// normalize input array second pass  - get only one max, min values -----------------------------------------------------------------
+[numthreads(1, 1, 1)]
+void NormalizeF1(int3 dispatchThreadID : SV_DispatchThreadID)
+{
+	/*
+	Input:
+		fBInputA - input  array float not normalized
+		int width
+		int height
+	Output:
+		fBOutA - output  only one max , min float
+	*/
+	float maxh = -100000000.0f;
+	float minh = 100000000.0f;
+	for (int i = 0; i < height; i++)
+	{
+		float c =	fBInputA[i];
+		maxh = (c > maxh) ? c : maxh;
+
+		c = fBInputA[i + height];
+		minh = (c < minh) ? c : minh;
+	}
+	fBOutA[0] = maxh;
+	fBOutA[1] = minh;
+}
+
+////////////////////////////////////////////// normalize input array third pass  to [0,1] R8 texture -----------------------------------------------------------------------------------
+[numthreads(32, 32, 1)]
+void NormalizeF2(int3 dispatchThreadID : SV_DispatchThreadID)
+{
+	/*
+	Input:
+		fBInputA - fBInputA - input  array float not normalized
+		fBOutA -  only min, max 
+		float minV - min value for output;
+		float maxV - max value for ouput;
+		int width
+		int height
+	Output:
+		gOutputVf - R8 texture
+	*/
+	int w = width;
+	int h = height;
+	int y = dispatchThreadID.y;
+	int x = dispatchThreadID.x;
+
+	if ((y < h) && (x < w))
+	{
+		int pos = x + y * width;
+		float maxh = fBOutA[0];
+		float minh = fBOutA[1];
+
+		float col = (fBInputA[pos] - minh) / (maxh - minh);
+		col = (col > maxV) ? 1.0f : col;
+		col = (col < minV) ? 0.0f : col;
+		gOutputVf[dispatchThreadID.xy] = col;
+	}
+}
+
+////////////////////////////////////////////// normalize input array third pass to [0,1] output Buffer -----------------------------------------------------------------------------------
+[numthreads(32, 32, 1)]
+void NormalizeFB(int3 dispatchThreadID : SV_DispatchThreadID)
+{
+	/*
+	Input:
+		StructuredBuffer <float> gInputBufferfloat 
+		StructuredBuffer<float> fBInputA -min, max value
+		float minV - min value for output;
+		float maxV - max value for ouput;
+		int width
+		int height
+	Output:
+		RWStructuredBuffer<float> fBOutA
+	*/
+	int w = width;
+	int h = height;
+	int y = dispatchThreadID.y;
+	int x = dispatchThreadID.x;
+
+	if ((y < h) && (x < w))
+	{
+
+		int pos = x + y * width;
+		float maxh = fBInputA[0];
+		float minh = fBInputA[1];
+		float col = (gInputBufferfloat[pos] - minh) / (maxh - minh);
+		col = (col > maxV) ? 1.0f : col;
+		col = (col < minV) ? 0.0f : col;
+		fBOutA[pos] =col;
+	}
+}
+
+// ---------------- END Normalize -----------------------------------------------------------------
+// 
+//
+//
+//
+//
+//
+
+////////////////////////////////////////////// box blur -----------------------------------------------------------------------------------
+[numthreads(32, 32, 1)]
+void CSBoxBlurPass(int3 dispatchThreadID : SV_DispatchThreadID)
+{
+	/*
+	Input:
+		float fSize  - radius
+		int width - texture width
+		Texture2D gInputV;
+	Output:
+		RWTexture2D<float4> gOutputV - output texture
+	*/
+	int y = dispatchThreadID.y;
+	int x = dispatchThreadID.x;
+	float radius = fSize;
+	int r = (int)radius;
+	float frac = radius - r;
+	float aDiv = (2.0f * radius + 1.0f);
+	int w = width;
+	float s = spread / 100.0f;
+	float sk = (s<0.75f) ? lerp(1.0f, 2.0f, s / 0.75f) : lerp(2.0f, 8.0f, (s - 0.75f) / 0.25f);
+
+	float4 a = 0;
+
+	for (int i = -r; i <= r; i++)
+	{
+		a += gInputV[int2(clamp(i + x, 0, w-1), y)];
+	}
+
+	a += (frac * gInputV[int2(clamp(-r - 1 + x, 0, w-1), y)]);
+	a += (frac * gInputV[int2(clamp(r + 1 + x, 0, w-1), y)]);
+	gOutputV[int2(y, x)] = a / aDiv * sk;
+}
+
+////////////////////////////////////////////// box blur R8 -----------------------------------------------------------------------------------
+[numthreads(32, 32, 1)]
+void CSBoxBlurPass_R8(int3 groupThreadID : SV_GroupThreadID, int3 dispatchThreadID : SV_DispatchThreadID)
+{
+	/*
+	Input:
+		float fSize  - radius
+		float spread - spread
+		int width - texture width
+		Texture2D gInputV;
+	Output:
+		RWTexture2D<float> gOutputVf - output texture
+	*/
+	int y = dispatchThreadID.y;
+	int x = dispatchThreadID.x;
+	float radius = fSize;
+	int r = (int)radius;
+	float frac = radius - r;
+	float aDiv = (2.0f * radius + 1.0f);
+	int w = width;
+	float s = spread / 100.0f;
+	float sk = (s<0.75f) ? lerp(1.0f, 2.0f, s / 0.75f) : lerp(2.0f, 8.0f, (s - 0.75f) / 0.25f);
+	float a = 0;
+	for (int i = -r; i <= r; i++)
+	{
+		a += gInputV[int2(clamp(i + x, 0, w-1), y)].r;
+	}
+
+	a += (frac * gInputV[int2(clamp(-r - 1 + x, 0, w-1), y)]).r;
+	a += (frac * gInputV[int2(clamp(r + 1 + x, 0, w-1), y)]).r;
+	gOutputVf[int2(y, x)] =  a / aDiv*sk;
+}
+
+////////////////////////////////////////////// box blur float buffer -----------------------------------------------------------------------------------
+[numthreads(32, 32, 1)]
+void CSBoxBlurPass_BUF(int3 dispatchThreadID : SV_DispatchThreadID)
+{
+	/*
+	Input:
+		float fSize  - radius
+		int width - texture width
+		RWStructuredBuffer<float> gRWBufferAfloat;
+		float spread -
+	Output:
+		RWStructuredBuffer <float> fBOutA;
+	*/
+	int y = dispatchThreadID.y;
+	int x = dispatchThreadID.x;
+	int w = width; 
+	int w1 = w - one;
+	int h = height;
+	int yw = y * w;
+	float aDiv = fSize;// float aDiv =sk / (2.0f * radius + 1.0f);
+	int r = ext;
+	float frac = range;
+	
+	float a = 0.0f;
+	int2 pos;
+	int bpos;
+	if ((y < h) && (x < w))
+	{
+		for (int i = -r; i <= r; i++)
+		{
+			pos = int2(clamp(i + x, 0, w1), y);
+			bpos = yw + pos.x;
+			a += gRWBufferAfloat[bpos];
+		}
+
+		pos = int2(clamp(-r - 1 + x, 0, w1), y);
+		bpos = yw + pos.x;
+		a += (frac * gRWBufferAfloat[bpos]);
+		pos = int2(clamp(r + 1 + x, 0, w1), y);
+		bpos = yw + pos.x;
+		a += (frac * gRWBufferAfloat[bpos]);
+		bpos = x * h + y;
+		fBOutA[bpos] = a * aDiv;
+	}
+}
+
+
+////////////////////////////////////////////// box blur from RGBA a-channel to R8 -----------------------------------------------------------------------------------
+[numthreads(32, 32, 1)]
+void CSBoxBlurPass_AR8(int3 groupThreadID : SV_GroupThreadID, int3 dispatchThreadID : SV_DispatchThreadID)
+{
+	/*
+	Input:
+		float fSize  - radius
+		int width - texture width
+		Texture2D gInputV (RGBA);
+	Output:
+		RWTexture2D<float> gOutputVf - output texture R8
+	*/
+	int y = dispatchThreadID.y;
+	int x = dispatchThreadID.x;
+	float radius = fSize;
+	int r = (int)radius;
+	float frac = radius - r;
+	float aDiv = (2.0f * radius + 1.0f); // kernel size
+	int w = width;
+	float s = spread / 100.0f;
+	float sk = (s<0.75f) ? lerp(1.0f, 2.0f, s / 0.75f) : lerp(2.0f, 8.0f, (s - 0.75f) / 0.25f);
+	float a = 0;
+
+	for (int i = -r; i <= r; i++)
+	{
+		a += gInputV[int2(clamp(i + x, 0, w-1), y)].a;
+	}
+
+	a += (frac * gInputV[int2(clamp(-r - 1 + x, 0, w-1), y)]).a;
+	a += (frac * gInputV[int2(clamp(r + 1 + x, 0, w-1), y)]).a;
+	gOutputVf[int2(y, x)] = a / aDiv *sk;
+}
+
+////////////////////////////////////////////// Substract Float Buffers -----------------------------------------------------------------------------------
+[numthreads(32, 1, 1)]
+void CSSubstrFloatBuffers(int3 groupThreadID : SV_GroupThreadID, int3 dispatchThreadID : SV_DispatchThreadID)
+{
+	/*
+	Input:
+		StructuredBuffer <float> gInputBufferfloat;
+		StructuredBuffer<float> fBInputA;
+	Output:
+		RWStructuredBuffer <float> fBOutA;
+	*/
+
+	int x = dispatchThreadID.x;
+	float s = gInputBufferfloat[x];
+	s = (s > 0.0f) ? s - 1.0f : 0.0f;
+	fBOutA[x] = fBInputA[x] - s;
+}
+
+//////////////////////////////////////////////Sum r-channels
+[numthreads(32, 32, 1)]
+void CSAdd_R8(int3 dispatchThreadID : SV_DispatchThreadID)
+{
+	/*
+	Input:
+		Texture2D gInputV;
+		Texture2D gInputH;
+	Output:
+		RWTexture2D<float> gOutputVf - output texture
+	*/
+	gOutputVf[dispatchThreadID.xy] = clamp(gInputV[dispatchThreadID.xy].r + gInputH[dispatchThreadID.xy].r, 0.0f,1.0f);
+}
+
+//////////////////////////////////////////////Sum Float Buffers
+[numthreads(32, 1, 1)]
+void CSAdd_BUF(int3 dispatchThreadID : SV_DispatchThreadID)
+{
+	/*
+	Input:
+		StructuredBuffer <float> gInputBufferfloat;
+		StructuredBuffer<float> fBInputA;
+	Output:
+		RWStructuredBuffer <float> fBOutA;
+	*/
+
+	int x = dispatchThreadID.x;
+	fBOutA[x] = fBInputA[x] + gInputBufferfloat[x];
+}

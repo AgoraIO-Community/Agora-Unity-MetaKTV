@@ -1,0 +1,20 @@
+fileFormatVersion: 2
+guid: e00180906352d1a45a93381b987e0f74
+timeCreated: 1496671782
+licenseType: Store
+MonoImporter:
+  serializedVersion: 2
+  defaultReferences:
+  - testImage: {instanceID: 0}
+  - SourceFont: {instanceID: 0}
+  - SourceMaterial: {instanceID: 0}
+  - SoftFont: {instanceID: 0}
+  - eShader: {fileID: 7200000, guid: 07390d8d94046e34a80885a3db0019bd, type: 3}
+  - sourceText: {instanceID: 0}
+  - blurText: {instanceID: 0}
+  - sourceText2D: {instanceID: 0}
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
