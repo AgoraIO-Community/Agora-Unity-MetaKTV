@@ -91,6 +91,7 @@ namespace agora.KTV
             options2.autoSubscribeVideo = true;
             options2.publishAudioTrack = true;
             options2.publishCameraTrack = false;
+            options2.publishCustomVideoTrack = true;
             options2.enableAudioRecordingOrPlayout = true;
             options2.clientRoleType = CLIENT_ROLE_TYPE.CLIENT_ROLE_BROADCASTER;
             var ret = _agoraRtcEngine?.JoinChannelEx("", connection, options2, null);
@@ -114,6 +115,11 @@ namespace agora.KTV
             options2.clientRoleType = CLIENT_ROLE_TYPE.CLIENT_ROLE_BROADCASTER;
             var ret = _agoraRtcEngine?.JoinChannelEx("", connection, options2, null);
             Debug.Log("RtcEngineController JoinChannelEx_MPK returns: " + ret);
+        }
+
+        public int SetExternalVideoSource()
+        {
+            return _agoraRtcEngine.SetExternalVideoSource(true, false, false, new EncodedVideoTrackOptions());
         }
 
         public int CreateDataStream()

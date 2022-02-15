@@ -2,54 +2,24 @@ using System;
 using UnityEngine;
 using UnityEngine.UI;
 using agora.rtc;
-using agora.util;
-using Logger = agora.util.Logger;
 
 namespace agora.KTV
 {
-
     public class MediaPlayerController
     {
-        private IAgoraRtcEngine _mRtcEngine = null;
-        internal IAgoraRtcMediaPlayer _mediaPlayer = null;
-        internal IAgoraKtvEventListener _agoraKtvEventListener;
-
         private static MediaPlayerController _mediaPlayerController;
-        private int playerId = 0;
         
-        // public delegate void MediaPlayerStateChanged(object sender, EventArgs e);
-        // public event MediaPlayerStateChanged OnMediaPlayerStateChanged;
-        //
-        // public MEDIA_PLAYER_STATE MediaPlayerState
-        // {
-        //     get { return MediaPlayerState; }
-        //     set
-        //     {
-        //         if (value == MEDIA_PLAYER_STATE.PLAYER_STATE_STOPPED)
-        //         {
-        //             WhenMediaPlayerStateChange();
-        //         }
-        //
-        //         MediaPlayerState = value;
-        //     }
-        // }
-        //
-        // private void WhenMediaPlayerStateChange() {
-        //     if (OnMediaPlayerStateChanged != null) {
-        //         OnMediaPlayerStateChanged(this, null);
-        //     }
-        // }
-        //
-        // private void ListenerValue_OnMeidaPlayerStateChanged(object sender, EventArgs e)
-        // {
-        //     GameApplication.canPlay = true;
-        // }
+        private IAgoraRtcEngine _mRtcEngine = null;
+        private IAgoraRtcMediaPlayer _mediaPlayer = null;
+        internal IAgoraKtvEventListener _agoraKtvEventListener;
+        
+        private int playerId = 0;
 
         public static MediaPlayerController GetInstance(IAgoraRtcEngine agoraRtcEngine)
         {
             if (_mediaPlayerController == null)
             {
-                Debug.Log("MediaPlayerController: GetInstance");
+                Debug.Log("[AgoraMeta] MediaPlayerController: GetInstance");
                 _mediaPlayerController = new MediaPlayerController(agoraRtcEngine);
             }
 
@@ -58,7 +28,6 @@ namespace agora.KTV
 
         private MediaPlayerController(IAgoraRtcEngine agoraRtcEngine)
         {
-            Debug.Log("MediaPlayerController: ctor");
             _mRtcEngine = agoraRtcEngine;
             InitMediaPlayer();
         }
@@ -80,8 +49,6 @@ namespace agora.KTV
             MpkEventHandler handler = new MpkEventHandler(this);
             _mediaPlayer.InitEventHandler(handler);
 
-            //OnMediaPlayerStateChanged += ListenerValue_OnMeidaPlayerStateChanged;
-            
             return playerId;
         }
         
