@@ -130,7 +130,7 @@ namespace agora.KTV
             return _agoraRtcEngine.CreateDataStream(config);
         }
 
-        public int SendStreamMessage(int streamId, string message)
+        public int SendStreamMessage(int streamId, byte[] message)
         {
             DataStreamConfig config = new DataStreamConfig();
             config.ordered = true;

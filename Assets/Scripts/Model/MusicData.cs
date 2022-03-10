@@ -36,12 +36,22 @@ namespace agora.KTV
             if (type == MUSIC_LIST_TYPE.LIST)
             {
                 if (MusicList.Count == 0) return null;
+                if (MusicList.Count == 1)
+                {
+                    MusicList.RemoveAt(0);
+                    return null;
+                }
                 MusicList.RemoveAt(0);
                 return MusicList[0];
             }
             else
             {
                 if (ChosenMusicList.Count == 0) return null;
+                if (ChosenMusicList.Count == 1)
+                {
+                    ChosenMusicList.RemoveAt(0);
+                    return null;
+                }
                 ChosenMusicList.RemoveAt(0);
                 return ChosenMusicList[0];
             }

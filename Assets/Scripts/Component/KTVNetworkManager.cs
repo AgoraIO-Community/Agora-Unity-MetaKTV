@@ -15,17 +15,18 @@ namespace agora.KTV
         
         public string RoomName { get; set; }
         
+        public string NetWorkAddress { get; set; } 
+        
         private System.Random _random = new System.Random();
         private Dropdown dropDown;
         private List<string> IdentityList = new List<string> {"Audience", "Broadcaster"};  
+        
+        public Transform SpawnPoint;
 
         // Called by UI element NetworkAddressInput.OnValueChanged
 
         public override void Awake()
         {
-            
-            networkAddress = "58.211.16.78";
-            
             dropDown = GameObject.Find("Dropdown").GetComponent<Dropdown>();
             dropDown.ClearOptions();
             dropDown.AddOptions(IdentityList);
@@ -61,6 +62,18 @@ namespace agora.KTV
         {
             GameApplication.isOwner = true;
         }
+        
+        public void StartGame()
+        {
+            if (GameApplication.isOwner == true)
+            {
+                StartHost();
+            }
+            else
+            {
+                StartClient();
+            }
+        }
 
         public struct CreatePlayerMessage : NetworkMessage
         {
@@ -76,16 +89,23 @@ namespace agora.KTV
         public override void OnClientConnect(NetworkConnection conn)
         {
             base.OnClientConnect(conn);
-        
+            Debug.Log("pigpigpigpig");
             // tell the server to create a player with this name
-            conn.Send(new CreatePlayerMessage {name = (uint) _random.Next(10000, 100000000)});
+            if (GameApplication.isOwner)
+            {
+                conn.Send(new CreatePlayerMessage {name = (uint) _random.Next(10000, 67889)});
+            }
+            else
+            {
+                conn.Send(new CreatePlayerMessage {name = (uint) _random.Next(67891, 10000000)});
+            }
         }
         
         void OnCreatePlayer(NetworkConnection connection, CreatePlayerMessage createPlayerMessage)
         {
             // create a gameobject using the name supplied by client
-            GameObject playergo = Instantiate(playerPrefab);
-            playergo.GetComponent<AgoraKTV>().playerName = createPlayerMessage.name;
+            GameObject playergo = Instantiate(playerPrefab, SpawnPoint.position, SpawnPoint.rotation);
+            //playergo.GetComponent<AgoraKTV>().playerName = createPlayerMessage.name;
         
             // set it as the player
             NetworkServer.AddPlayerForConnection(connection, playergo);

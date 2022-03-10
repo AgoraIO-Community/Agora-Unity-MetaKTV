@@ -189,15 +189,14 @@ namespace agora.KTV
 
         public override void OnPlayerSourceStateChanged(int playerId, MEDIA_PLAYER_STATE state, MEDIA_PLAYER_ERROR ec)
         {
-            _mediaPlayerController._agoraKtvEventListener?.OnPlayerSourceStateChanged(playerId, state, ec);
             Debug.Log("[KTV LOG] OnPlayerSourceStateChanged: playerId " + playerId + "MEDIA_PLAYER_STATE: " + state);
+            _mediaPlayerController._agoraKtvEventListener?.OnPlayerSourceStateChanged(playerId, state, ec);
         }
 
         public override void OnCompleted(int playerId)
         {
-            _mediaPlayerController._agoraKtvEventListener?.OnCompleted(playerId);
             Debug.Log("[KTV LOG] OnCompleted: playerId " + playerId);
-
+            _mediaPlayerController._agoraKtvEventListener?.OnCompleted(playerId);
         }
     }
 
