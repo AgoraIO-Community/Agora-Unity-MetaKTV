@@ -41,7 +41,7 @@ MetaKTV是基于Unity开发的项目，项目目录包含一下文件夹：
 
 3、打开项目
 
-4、下载[模型资源](https://download.agora.io/demo/test/AgoraMetaKTVResource.unitypackage)，将下载的unitypackage import进项目；
+4、下载[模型资源](https://download.agora.io/demo/test/AgoraMetaKTV_v1.5_UIModel.zip)，将下载的unitypackage import进项目；
 
 5、在Scripts目录下，GameApplication文件内填入AppId、CustomerKey、CustomerSecret；
 
