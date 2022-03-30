@@ -247,7 +247,7 @@ namespace agora.KTV
         public void onMusicSlider(float volume)
         {
             MediaPlayerController.GetInstance(_rtcEngineController.GetRtcEngine())
-                .MediaPlayerAdjustPublishSignalVolume(GameApplication.playerId, (int) volume);
+                .MediaPlayerAdjustPlayoutVolume(GameApplication.playerId, (int) volume);
         }
 
         public void onPeopleSlider(float volume)

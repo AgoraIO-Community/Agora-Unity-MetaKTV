@@ -180,6 +180,15 @@ namespace agora.KTV
 
                 playerId = _mediaPlayerController.GetPlayerId();
                 Debug.Log("HUGOLOG playerId is :"  + playerId);
+                
+                
+                //MakeVideoView((uint) playerId, "",VIDEO_SOURCE_TYPE.VIDEO_SOURCE_MEDIA_PLAYER);
+                //spatial audio for media player
+                // var transform1 = GameObject.Find("Speakers02").GetComponent<Transform>();
+                // var position1 = transform1.position;
+                // float[] positionList1 = {position1.x, position1.y, position1.z};
+                // float[] forward1 = {transform1.forward.x, transform1.forward.y, transform1.forward.z};
+                // _spatialAudioController?.UpdatePlayerPosition(playerId, positionList1, forward1);
 
                 if (GameApplication.isOwner)
                 {
@@ -266,6 +275,9 @@ namespace agora.KTV
                 Debug.Log("client MakeVideoView " + connection.localUid + " " + connection.channelId);
                 MakeVideoView(67890, connection.channelId, VIDEO_SOURCE_TYPE.VIDEO_SOURCE_REMOTE);
                 
+                IAgoraRtcEngine rtc = AgoraRtcEngine.Get();
+                var ret = rtc.AdjustUserPlaybackSignalVolume(67890, 200);
+                
                 var transform = GameObject.Find("SM_SquareSign24").GetComponent<Transform>();
                 var position = transform.position;
                 float[] positionLocal = {position.x, position.y, position.z};
@@ -273,9 +285,6 @@ namespace agora.KTV
                 float[] up = {transform.up.x, transform.up.y, transform.up.z};
                 float[] forward = {transform.forward.x, transform.forward.y, transform.forward.z};
                 _spatialAudioController?.UpdateSelfPosition(positionLocal, forward, right, up, new RtcConnection(GameApplication.ChannelId, playerName));
-                
-                
-                
                 
                 var transform1 = GameObject.Find("Speakers02").GetComponent<Transform>();
                 var position1 = transform1.position;
@@ -306,8 +315,9 @@ namespace agora.KTV
                 //adjust volume and mute the audio stream in channel
                 _mediaPlayerController.MediaPlayerAdjustPlayoutVolume(playerId, 100);
                 IAgoraRtcEngine rtc = AgoraRtcEngine.Get();
-                rtc.MuteRemoteAudioStreamEx(67890, true, new RtcConnection(GameApplication.ChannelId, playerName));
-                
+                var ret = rtc.AdjustUserPlaybackSignalVolume(67890, 0);
+                rtc.SetVoiceBeautifierPreset(VOICE_BEAUTIFIER_PRESET.SINGING_BEAUTIFIER);
+
                 MakeVideoView((uint) playerId, "",VIDEO_SOURCE_TYPE.VIDEO_SOURCE_MEDIA_PLAYER);
                 
                 //spatial audio for media player

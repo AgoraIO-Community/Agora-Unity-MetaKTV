@@ -91,7 +91,6 @@ namespace agora.KTV
             options2.autoSubscribeVideo = true;
             options2.publishAudioTrack = true;
             options2.publishCameraTrack = false;
-            options2.publishCustomVideoTrack = true;
             options2.enableAudioRecordingOrPlayout = true;
             options2.clientRoleType = CLIENT_ROLE_TYPE.CLIENT_ROLE_BROADCASTER;
             var ret = _agoraRtcEngine?.JoinChannelEx("", connection, options2, null);
@@ -104,8 +103,8 @@ namespace agora.KTV
             connection.channelId = channelName;
             connection.localUid = 67890;
             ChannelMediaOptions options2 = new ChannelMediaOptions();
-            options2.autoSubscribeAudio = true;
-            options2.autoSubscribeVideo = true;
+            options2.autoSubscribeAudio = false;
+            options2.autoSubscribeVideo = false;
             options2.publishAudioTrack = false;
             options2.publishCameraTrack = false;
             options2.publishMediaPlayerAudioTrack = true;
@@ -119,7 +118,7 @@ namespace agora.KTV
 
         public int SetExternalVideoSource()
         {
-            return _agoraRtcEngine.SetExternalVideoSource(true, false, false, new EncodedVideoTrackOptions());
+            return _agoraRtcEngine.SetExternalVideoSource(true, false, EXTERNAL_VIDEO_SOURCE_TYPE.VIDEO_FRAME, new EncodedVideoTrackOptions());
         }
 
         public int CreateDataStream()
