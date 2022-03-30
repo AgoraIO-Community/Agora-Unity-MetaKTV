@@ -38,10 +38,9 @@ namespace agora.KTV
                 return -100;
             }
 
+            _spatialAudioEngine?.Initialize();
             _spatialAudioEngine?.SetAudioRecvRange(1000.5f);
-            _spatialAudioEngine?.SetDistanceUnit(0.9f);
-            _spatialAudioEngine?.EnableSpeaker(true);
-            _spatialAudioEngine?.EnableMic(true);
+            _spatialAudioEngine?.SetDistanceUnit(0.5f);
             return 0;
         }
 

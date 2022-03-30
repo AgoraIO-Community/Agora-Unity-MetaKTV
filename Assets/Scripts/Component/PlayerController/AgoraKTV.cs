@@ -94,10 +94,10 @@ namespace agora.KTV
 
         void OnPlayerPositionChangedHandler(AgoraKTV p, PlayerInfo PlayerInfo)
         {
-            Debug.Log("pig is:" + pig + " isLocalPlayer " + p.isLocalPlayer + " uid:" + p.playerName +
+            Debug.Log("pig is:" + pig + " isLocalPlayer " + p.hasAuthority + " uid:" + p.playerName +
                       " OnPlayerPositionChangedHandler x:" + PlayerInfo.position.x + " y:" + PlayerInfo.position.y +
                       " z:" + PlayerInfo.position.z);
-            if (p.isLocalPlayer)
+            if (p.hasAuthority)
             {
                 Transform transform = p.GetComponent<Transform>();
                 var position = transform.position;
@@ -110,6 +110,7 @@ namespace agora.KTV
             }
             else
             {
+                if (p.playerName < 67890) return;
                 var position = PlayerInfo.position;
                 var forward = PlayerInfo.forward;
                 float[] positionRemote = {position.x, position.y, position.z};
@@ -164,7 +165,7 @@ namespace agora.KTV
         void Start()
         {
             var identity = GetComponent<NetworkIdentity>();
-            isLocal = identity.isLocalPlayer;
+            isLocal = identity.hasAuthority;
 
             _rtcEngineController = RtcEngineController.GetInstance();
             _agoraRtcEngine = _rtcEngineController.GetRtcEngine();
@@ -179,6 +180,15 @@ namespace agora.KTV
 
                 playerId = _mediaPlayerController.GetPlayerId();
                 Debug.Log("HUGOLOG playerId is :"  + playerId);
+                
+                
+                //MakeVideoView((uint) playerId, "",VIDEO_SOURCE_TYPE.VIDEO_SOURCE_MEDIA_PLAYER);
+                //spatial audio for media player
+                // var transform1 = GameObject.Find("Speakers02").GetComponent<Transform>();
+                // var position1 = transform1.position;
+                // float[] positionList1 = {position1.x, position1.y, position1.z};
+                // float[] forward1 = {transform1.forward.x, transform1.forward.y, transform1.forward.z};
+                // _spatialAudioController?.UpdatePlayerPosition(playerId, positionList1, forward1);
 
                 if (GameApplication.isOwner)
                 {
@@ -187,7 +197,7 @@ namespace agora.KTV
                     _rtcEngineController?.JoinChannelEx(GameApplication.ChannelId, playerName);
                     _rtcEngineController?.JoinChannelEx_MPK(GameApplication.ChannelId, 67890, playerId);
                     
-                    //_mediaPlayerController.MediaPlayerOpen(playerId, "https://agora-adc-artifacts.s3.cn-north-1.amazonaws.com.cn/resources/jay.mkv", 0);
+                    //_mediaPlayerController.MediaPlayerOpen(playerId, "https://agora-adc-artifacts.oss-cn-beijing.aliyuncs.com/video/meta_live_mpk.mov", 0);
                     pig = 1;
                 }
                 else
@@ -209,7 +219,7 @@ namespace agora.KTV
         {
             Debug.Log("OnDestroy");
 
-            if (isLocalPlayer)
+            if (hasAuthority)
             {
                 if (GameApplication.isOwner)
                 {
@@ -222,7 +232,7 @@ namespace agora.KTV
             }
         }
         
-        private void MakeVideoView(uint id, string channelId, IRIS_VIDEO_SOURCE_TYPE type)
+        private void MakeVideoView(uint id, string channelId, VIDEO_SOURCE_TYPE type)
         {
             // create a GameObject and assign to this new user
             Debug.Log("MakeVideoView");
@@ -231,7 +241,7 @@ namespace agora.KTV
             var surface = gameObject.AddComponent<AgoraVideoSurface>();
             surface.SetForUser(id, channelId, type);
             surface.SetEnable(true);
-            surface.EnableFilpTextureApply(false, false);
+            surface.EnableFilpTextureApply(true, false);
         }
 
         private void DestroyVideoView(uint playerId)
@@ -263,7 +273,18 @@ namespace agora.KTV
             if (uid == 67890 && !GameApplication.isOwner)
             {
                 Debug.Log("client MakeVideoView " + connection.localUid + " " + connection.channelId);
-                MakeVideoView(67890, connection.channelId, IRIS_VIDEO_SOURCE_TYPE.kVideoSourceTypeRemote);
+                MakeVideoView(67890, connection.channelId, VIDEO_SOURCE_TYPE.VIDEO_SOURCE_REMOTE);
+                
+                IAgoraRtcEngine rtc = AgoraRtcEngine.Get();
+                var ret = rtc.AdjustUserPlaybackSignalVolume(67890, 200);
+                
+                var transform = GameObject.Find("SM_SquareSign24").GetComponent<Transform>();
+                var position = transform.position;
+                float[] positionLocal = {position.x, position.y, position.z};
+                float[] right = {transform.right.x, transform.right.y, transform.right.z};
+                float[] up = {transform.up.x, transform.up.y, transform.up.z};
+                float[] forward = {transform.forward.x, transform.forward.y, transform.forward.z};
+                _spatialAudioController?.UpdateSelfPosition(positionLocal, forward, right, up, new RtcConnection(GameApplication.ChannelId, playerName));
                 
                 var transform1 = GameObject.Find("Speakers02").GetComponent<Transform>();
                 var position1 = transform1.position;
@@ -271,6 +292,40 @@ namespace agora.KTV
                 float[] forward1 = {transform1.forward.x, transform1.forward.y, transform1.forward.z};
                 Debug.Log("position1.x" + position1.x + "position1.y" + position1.y + "position1.z" + position1.z);
                 _spatialAudioController?.UpdateRemotePosition(67890, positionList1, forward1, new RtcConnection(GameApplication.ChannelId, playerName));
+            }
+            else if (uid < 67890 && !GameApplication.isOwner)
+            {
+                var transform = GameObject.Find("SM_SquareSign24").GetComponent<Transform>();
+                var position = transform.position;
+                float[] positionLocal = {position.x, position.y, position.z};
+                float[] right = {transform.right.x, transform.right.y, transform.right.z};
+                float[] up = {transform.up.x, transform.up.y, transform.up.z};
+                float[] forward = {transform.forward.x, transform.forward.y, transform.forward.z};
+                _spatialAudioController?.UpdateSelfPosition(positionLocal, forward, right, up, new RtcConnection(GameApplication.ChannelId, playerName));
+                
+                var transform1 = GameObject.Find("Speakers02").GetComponent<Transform>();
+                var position1 = transform1.position;
+                float[] positionList1 = {position1.x, position1.y, position1.z};
+                float[] forward1 = {transform1.forward.x, transform1.forward.y, transform1.forward.z};
+                Debug.Log("position1.x" + position1.x + "position1.y" + position1.y + "position1.z" + position1.z);
+                _spatialAudioController?.UpdateRemotePosition(uid, positionList1, forward1, new RtcConnection(GameApplication.ChannelId, playerName));
+            }
+            else if (uid == 67890 && GameApplication.isOwner)
+            {
+                //adjust volume and mute the audio stream in channel
+                _mediaPlayerController.MediaPlayerAdjustPlayoutVolume(playerId, 100);
+                IAgoraRtcEngine rtc = AgoraRtcEngine.Get();
+                var ret = rtc.AdjustUserPlaybackSignalVolume(67890, 0);
+                rtc.SetVoiceBeautifierPreset(VOICE_BEAUTIFIER_PRESET.SINGING_BEAUTIFIER);
+
+                MakeVideoView((uint) playerId, "",VIDEO_SOURCE_TYPE.VIDEO_SOURCE_MEDIA_PLAYER);
+                
+                //spatial audio for media player
+                var transform1 = GameObject.Find("Speakers02").GetComponent<Transform>();
+                var position1 = transform1.position;
+                float[] positionList1 = {position1.x, position1.y, position1.z};
+                float[] forward1 = {transform1.forward.x, transform1.forward.y, transform1.forward.z};
+                _spatialAudioController?.UpdatePlayerPosition(playerId, positionList1, forward1);
             }
         }
 
@@ -290,24 +345,14 @@ namespace agora.KTV
             if (state == MEDIA_PLAYER_STATE.PLAYER_STATE_OPEN_COMPLETED)
             {
                 _mediaPlayerController.MediaPlayerPlay(playerId);
-                
-                //adjust volume and mute the audio stream in channel
-                _mediaPlayerController.MediaPlayerAdjustPlayoutVolume(playerId, 100);
-                IAgoraRtcEngine rtc = AgoraRtcEngine.Get();
-                rtc.MuteRemoteAudioStreamEx(67890, true, new RtcConnection(GameApplication.ChannelId, playerName));
-                
-                MakeVideoView((uint) playerId, "", IRIS_VIDEO_SOURCE_TYPE.kVideoSourceTypeMediaPlayer);
-                
-                //spatial audio for media player
-                var transform1 = GameObject.Find("Speakers02").GetComponent<Transform>();
-                var position1 = transform1.position;
-                float[] positionList1 = {position1.x, position1.y, position1.z};
-                float[] forward1 = {transform1.forward.x, transform1.forward.y, transform1.forward.z};
-                _spatialAudioController?.UpdatePlayerPosition(playerId, positionList1, forward1);
             }
             else if (state == MEDIA_PLAYER_STATE.PLAYER_STATE_STOPPED)
             {
                 GameApplication.canPlay = true;
+            }
+            else if (state == MEDIA_PLAYER_STATE.PLAYER_STATE_PLAYBACK_ALL_LOOPS_COMPLETED)
+            {
+                GameApplication.isAutoEnd = true;
             }
         }
 

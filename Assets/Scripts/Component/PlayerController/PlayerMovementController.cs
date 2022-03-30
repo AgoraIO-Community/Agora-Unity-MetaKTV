@@ -38,6 +38,9 @@ namespace UnityChan
 		static int jumpState = Animator.StringToHash ("Base Layer.Jump");
 		static int restState = Animator.StringToHash ("Base Layer.Rest");
 		
+		private Transform player;
+		private Vector3 offsetPosition;//位置偏移
+		
 		void Start ()
 		{
 #if UNITY_ANDROID || UNITY_IOS && !UNITY_EDITOR_OSX
@@ -56,11 +59,11 @@ namespace UnityChan
 		
 		void FixedUpdate ()
 		{
-			if (isLocalPlayer)
+			if (hasAuthority)
 			{
 				float h = Input.GetAxis ("Horizontal");
 				float v = Input.GetAxis ("Vertical");
-				
+
 #if UNITY_ANDROID || UNITY_IOS && !UNITY_EDITOR_OSX
 				h = joystick.Horizontal;
 				v = joystick.Vertical;
@@ -164,7 +167,7 @@ namespace UnityChan
 		
 		void resetCollider ()
 		{
-			if (isLocalPlayer)
+			if (hasAuthority)
 			{
 				col.height = orgColHight;
 				col.center = orgVectColCenter;

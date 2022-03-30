@@ -16,7 +16,7 @@ public class GameApplication : MonoBehaviour
     public static string AppId = "";
 
     [SerializeField]
-    public static string ChannelId = "";
+    public static string ChannelId = "12345";
     
     [SerializeField]
     public static string CustomerKey = "";
@@ -27,6 +27,8 @@ public class GameApplication : MonoBehaviour
     public static int playerId = 0;
 
     public static bool canPlay = false;
+
+    public static bool isAutoEnd = false;
 
     public static string PlayerName;
     

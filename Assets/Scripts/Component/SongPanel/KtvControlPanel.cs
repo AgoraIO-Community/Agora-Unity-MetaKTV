@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections;
 using System.IO;
+using System.Threading;
 using agora.rtc;
 using UnityEngine;
 using UnityEngine.UI;
@@ -76,13 +77,36 @@ namespace agora.KTV
             PeopleVolumeSlider.onValueChanged.AddListener(onPeopleSlider);
 
             MusicInfoText = GameObject.Find("MusicInfoText").GetComponent<TextMesh>();
+
+            NextPage();
         }
         
         private void OnApplicationQuit()
         {
             StopAllCoroutines();
         }
-        
+
+        private void Update()
+        {
+            if (GameApplication.isAutoEnd == true)
+            {
+                NextSong();
+                GameApplication.isAutoEnd = false;
+            }
+            if (GameApplication.canPlay == true)
+            {
+                NextItems();
+                MusicInfo musicInfo = _musicData.Remove(MUSIC_LIST_TYPE.CHOSEN);
+                if (musicInfo == null) return;
+                Debug.Log("HUGOLOG NextSong Url:"  + musicInfo.url);
+                if (GameApplication.playerId == 0) return;
+                MediaPlayerController.GetInstance(_rtcEngineController.GetRtcEngine()).MediaPlayerOpen(GameApplication.playerId, musicInfo.url, 0);
+
+                MusicInfoText.text = musicInfo.name + "\n" + musicInfo.singer;
+                GameApplication.canPlay = false;
+            }
+        }
+
         private void ShowItems()
         {
             for (int i = 0; i < 10; i++)
@@ -207,36 +231,23 @@ namespace agora.KTV
         public void NextSong()
         {
             if (addItemList.Count == 0) return;
-            
             MediaPlayerController.GetInstance(_rtcEngineController.GetRtcEngine()).MediaPlayerStop(GameApplication.playerId);
-
-            if (GameApplication.canPlay == true)
-            {
-                NextItems();
-                MusicInfo musicInfo = _musicData.Remove(MUSIC_LIST_TYPE.CHOSEN);
-                Debug.Log("HUGOLOG NextSong Url:"  + musicInfo.url);
-                if (GameApplication.playerId == 0) return;
-                MediaPlayerController.GetInstance(_rtcEngineController.GetRtcEngine()).MediaPlayerOpen(GameApplication.playerId, musicInfo.url, 0);
-
-                MusicInfoText.text = musicInfo.name + "\n" + musicInfo.singer;
-                GameApplication.canPlay = false;
-            }
         }
 
         public void onMusicToggle(bool isOn)
         {
             int index = 0;
             if (isOn)
-                index = 1;
+                index = 0;
             else
-                index = 2;
+                index = 1;
             MediaPlayerController.GetInstance(_rtcEngineController.GetRtcEngine()).MediaPlayerSelectAudioTrack(GameApplication.playerId, index);
         }
 
         public void onMusicSlider(float volume)
         {
             MediaPlayerController.GetInstance(_rtcEngineController.GetRtcEngine())
-                .MediaPlayerAdjustPublishSignalVolume(GameApplication.playerId, (int) volume);
+                .MediaPlayerAdjustPlayoutVolume(GameApplication.playerId, (int) volume);
         }
 
         public void onPeopleSlider(float volume)
@@ -266,6 +277,11 @@ namespace agora.KTV
             string music = decoder.Decode(result);
             Mp3Url = music;
             Debug.Log("HUGOLOG music url is: " + music);
+        }
+
+        private void PlayDefaultMv()
+        {
+            MediaPlayerController.GetInstance(_rtcEngineController.GetRtcEngine()).MediaPlayerOpen(GameApplication.playerId, "https://agora-adc-artifacts.oss-cn-beijing.aliyuncs.com/video/meta_live_mpk.mov", 0);
         }
     }
 }
